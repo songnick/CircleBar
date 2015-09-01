@@ -22,25 +22,28 @@ public class CircleProgress extends View {
     private Handler handler = new Handler(){
         @Override
         public void handleMessage(Message msg) {
-            if (startAngle + (15 + durationAngle)*startCount >= 270 && !decrease){
-                removeMessages(CIRCLE_MSG);
-//                startCount = 0;
-                decrease = true;
-                sendEmptyMessage(CIRCLE_MSG);
-            }else {
+//            if (startAngle + (15 + durationAngle)*startCount >= 270 && !decrease){
+//                removeMessages(CIRCLE_MSG);
+////                startCount = 0;
+//                decrease = true;
+//                handler.sendEmptyMessageDelayed(CIRCLE_MSG, 1000);
+//            }else {
                 invalidate();
-                sendEmptyMessageDelayed(CIRCLE_MSG, 10);
-                if (decrease){
-                    if (endCount > startCount){
-                        removeMessages(CIRCLE_MSG);
-                    }else {
-                        endCount++;
-                    }
-
-                }else {
-                    startCount++;
-                }
-            }
+//                sendEmptyMessageDelayed(CIRCLE_MSG, 1000);
+//                if (decrease){
+//                    if (endCount > startCount){
+//                        startCount = 0;
+//                        endCount = 0;
+//                        decrease = false;
+//                        handler.sendEmptyMessageDelayed(CIRCLE_MSG, 1000);
+//                    }else {
+//                        endCount++;
+//                    }
+//
+//                }else {
+////                    startCount++;
+//                }
+//            }
         }
     };
 
@@ -55,7 +58,7 @@ public class CircleProgress extends View {
     public CircleProgress(Context context, AttributeSet attrs, int defStyleAttr) {
         super(context, attrs, defStyleAttr);
         initPaint();
-        handler.sendEmptyMessageDelayed(CIRCLE_MSG, 200);
+        handler.sendEmptyMessageDelayed(CIRCLE_MSG, 400);
     }
 
     @Override
@@ -70,13 +73,17 @@ public class CircleProgress extends View {
         drawProgress(canvas);
     }
 
+    private static final int DEFAUTL_SWEEP_ANGLE = 15;
+
     private int startAngle = 10;
     private int durationAngle = 10;
-    private int startCount = 0;
+    private int sweepAngle = DEFAUTL_SWEEP_ANGLE;
+    private int startCount = 4;
     private boolean decrease = false;
     private int endCount = 0;
     private Paint redPaint = null;
     private Paint transparentPaint = null;
+
 
     private void initPaint(){
         redPaint = new Paint();
@@ -94,7 +101,7 @@ public class CircleProgress extends View {
 
     private void drawArc(Canvas canvas){
         Path path = new Path();
-        RectF rectF = new RectF(100, 10, 200, 110);
+        RectF rectF = new RectF(100, 10, 400, 310);
         Paint paint = new Paint();
         paint.setStyle(Paint.Style.STROKE);
         paint.setAntiAlias(true);
@@ -102,19 +109,21 @@ public class CircleProgress extends View {
         if (decrease){
             paint.setColor(Color.TRANSPARENT);
             for (int i = 0; i <= startCount; i++){
-                int du = (15 + durationAngle)*i;
-                if (i < endCount){
-                    canvas.drawArc(rectF, startAngle + du, 15,false, transparentPaint);
-                }else {
-                    canvas.drawArc(rectF, startAngle + du, 15,false, redPaint);
-                }
+                float du = (15 + durationAngle)*i + 2.5f*i;
+//                if (i < endCount){
+//                    canvas.drawArc(rectF, startAngle + du, sweepAngle,false, transparentPaint);
+//                }else {
+                    canvas.drawArc(rectF, startAngle + du, sweepAngle,false, redPaint);
+//                }
+                //i more than big , start angle should big
 //                canvas.drawArc(rectF, -90, 90,false, paint);
                 Log.e("", " startcount = " + startCount + " i =" + i);
 //                path.addArc(rectF, startAngle + du, 15);
             }
+//            sweepAngle--;
         }else{
-            for (int i = 0; i <= startCount; i++){
-                int du = (15 + durationAngle)*i;
+            for (int i = 0; i <= 4; i++){
+                float du = (15 + durationAngle)*i;
 //            if (du >= 270 ){
 ////                handler.removeMessages(CIRCLE_MSG);
 //                startCount = 0;
@@ -124,9 +133,16 @@ public class CircleProgress extends View {
 //            }
                 Log.e("", " startcount = " + startCount + " i =" + i);
 //                path.addArc(rectF, startAngle + du, 15);
-                canvas.drawArc(rectF, startAngle + du, 15,false, redPaint);
+                if (startAngle + (15 + durationAngle)*startCount >= 270){
+                    du += 2.5f*i;
+                }
+                canvas.drawArc(rectF, startAngle + du, sweepAngle,false, redPaint);
 
             }
+//            if (startAngle + (15 + durationAngle)*startCount < 270){
+//                du += 2.5f*i;
+//            }
+            startAngle += 5;
             paint.setColor(Color.RED);
         }
 
@@ -148,7 +164,7 @@ public class CircleProgress extends View {
 
     private void drawProgress(Canvas canvas){
         if (!progressIsDraw){
-            RectF rectF = new RectF(100, 10, 200, 110);
+            RectF rectF = new RectF(100, 10, 400, 310);
             Paint paint = new Paint();
             paint.setStyle(Paint.Style.STROKE);
             paint.setColor(Color.RED);

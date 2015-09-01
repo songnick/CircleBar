@@ -11,7 +11,11 @@
         android:id="@+id/test"/>
     <com.nick.circleprogress.CircleProgress
         android:layout_below="@id/test"
-        android:layout_width="300px"
+        android:layout_width="500px"
         android:layout_height="500px" />
+
+    <com.nick.circleprogress.AccelerationProgress
+        android:layout_width="300dp"
+        android:layout_height="300dp" />
 
 </RelativeLayout>
