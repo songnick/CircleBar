@@ -4,6 +4,7 @@ import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
+import android.graphics.Path;
 import android.graphics.RectF;
 import android.util.AttributeSet;
 import android.view.View;
@@ -46,7 +47,6 @@ public class AccelerationProgress extends View{
         accBallPaint.setAntiAlias(true);
         accBallPaint.setColor(Color.BLUE);
         accBallPaint.setStyle(Paint.Style.FILL);
-
         rectF = new RectF();
     }
 
@@ -61,7 +61,12 @@ public class AccelerationProgress extends View{
 
     @Override
     protected void onDraw(Canvas canvas) {
-        canvas.drawCircle(rectF.centerX(), rectF.centerY(),rectF.width()/3, circlePaint);
-        canvas.drawCircle(rectF.centerX(), rectF.centerY() - rectF.width()/3, 14f, accBallPaint);
+        canvas.drawCircle(rectF.centerX(), rectF.centerY(), rectF.width() / 3, circlePaint);
+        canvas.drawCircle(rectF.centerX(), rectF.centerY() - rectF.width() / 3, 14f, accBallPaint);
+
+    }
+
+    private void getCircleLocation(int sweepAngle){
+
     }
 }
