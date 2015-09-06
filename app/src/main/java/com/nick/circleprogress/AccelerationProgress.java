@@ -56,7 +56,7 @@ public class AccelerationProgress extends View{
         int width = MeasureSpec.getSize(widthMeasureSpec);
         int height = MeasureSpec.getSize(heightMeasureSpec);
 
-        
+
         rectF.set(0, 0, width, height);
     }
 
