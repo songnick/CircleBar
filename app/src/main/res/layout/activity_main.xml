@@ -14,8 +14,8 @@
         android:layout_width="500px"
         android:layout_height="500px" />
 
-    <com.nick.circleprogress.AccelerationProgress
-        android:layout_width="300dp"
-        android:layout_height="300dp" />
+    <com.nick.library.view.AccelerationProgress
+        android:layout_width="100dp"
+        android:layout_height="100dp"/>
 
 </RelativeLayout>

@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <declare-styleable name="AccelerationProgress">
+        <attr name="accBallRadius" format="dimension"></attr>
+        <attr name="bigCircleStroke" format="dimension"></attr>
+        <attr name="accBallBackground" format="color"></attr>
+        <attr name="bigCircleBackground" format="color"></attr>
+    </declare-styleable>
+</resources>
