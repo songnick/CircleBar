@@ -52,7 +52,6 @@ public class AccelerationProgress extends View implements AccAnimation.AccAnimat
         accBallRadius = a.getDimension(R.styleable.AccelerationProgress_accBallRadius, 14);
         accBallBackground = a.getColor(R.styleable.AccelerationProgress_accBallBackground, Color.BLUE);
         bigCircleStroke = a.getDimension(R.styleable.AccelerationProgress_bigCircleStroke, 7);
-
         a.recycle();
         init();
     }
@@ -98,10 +97,13 @@ public class AccelerationProgress extends View implements AccAnimation.AccAnimat
     }
 
     private void drawAccBall(Canvas canvas){
+        //start position is in the (radius, 0)
+        //so sweep angle must be started 270
         double sweepAngle = Math.PI/180 * ratio + Math.PI/180 * 270;
         float y = (float)Math.sin(sweepAngle)*(getBigCircleRadius());
         float x = (float)Math.cos(sweepAngle)*(getBigCircleRadius());
         int restoreCount = canvas.save();
+        //change aix center position
         canvas.translate(rectF.centerX(), rectF.centerY());
         canvas.drawCircle(x, y, accBallRadius, accBallPaint);
         canvas.restoreToCount(restoreCount);
@@ -127,7 +129,14 @@ public class AccelerationProgress extends View implements AccAnimation.AccAnimat
         AccTypeEvaluator accCore = new AccTypeEvaluator();
         animator = ValueAnimator.ofObject(accCore, 0.0f, 360.0f);
         animator.setDuration(duration);
-        animator.addUpdateListener(new AccUpdateListener());
+        animator.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
+            @Override
+            public void onAnimationUpdate(ValueAnimator animation) {
+                Float value = (Float)animation.getAnimatedValue();
+                ratio = value;
+                invalidate();
+            }
+        });
         /**
          * as I know the animator's default interpolator is {@link #AccelerateDecelerateInterpolator}
          * if you want to modify the interpolator, use {@link ValueAnimator#setInterpolator(TimeInterpolator)}
@@ -159,13 +168,4 @@ public class AccelerationProgress extends View implements AccAnimation.AccAnimat
         this.duration = duration;
     }
 
-    private class AccUpdateListener implements ValueAnimator.AnimatorUpdateListener{
-
-        @Override
-        public void onAnimationUpdate(ValueAnimator animation) {
-            Float value = (Float)animation.getAnimatedValue();
-            ratio = value * 360;
-            invalidate();
-        }
-    }
 }

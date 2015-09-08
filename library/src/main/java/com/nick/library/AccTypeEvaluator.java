@@ -13,7 +13,7 @@ public class AccTypeEvaluator implements TypeEvaluator<Float>{
     @Override
     public Float evaluate(float fraction, Float startValue, Float endValue) {
         Log.d("", " current fraction == " + fraction);
-        return fraction;
+        return fraction * (endValue - startValue);
     }
 
 }
