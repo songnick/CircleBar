@@ -11,7 +11,7 @@ import android.graphics.RectF;
 import android.util.AttributeSet;
 import android.view.View;
 
-import com.nick.library.AccAnimation;
+import com.nick.library.LinearAnimation;
 import com.nick.library.AccTypeEvaluator;
 import com.nick.library.R;
 
@@ -20,7 +20,7 @@ import com.nick.library.R;
  * here we need know the circle progress
  * (x-a)^2 + (y-b)^2 = r^2;
  */
-public class AccelerationProgress extends View implements AccAnimation.AccAnimationListener{
+public class AccelerationProgress extends View implements LinearAnimation.AccAnimationListener{
 
     private static final int ACC_UPDATE_MSG = 1 << 0;
     private static final long DEFAULT_DURATION = 1500;
@@ -30,7 +30,7 @@ public class AccelerationProgress extends View implements AccAnimation.AccAnimat
     private RectF rectF = null;
     private int acc = 0;
     private float ratio = 0.0f;
-    private AccAnimation mAccAnimation = null;
+    private LinearAnimation mAccAnimation = null;
 
     private float accBallRadius = 0.0f;
     private int accBallBackground = Color.BLUE;
@@ -118,7 +118,7 @@ public class AccelerationProgress extends View implements AccAnimation.AccAnimat
 
     private void startAnimation(){
 //        if (mAccAnimation == null){
-//            mAccAnimation = new AccAnimation();
+//            mAccAnimation = new LinearAnimation();
 //            mAccAnimation.setDuration(1000);
 //            mAccAnimation.setInterpolator(new LinearInterpolator());
 //            mAccAnimation.setRepeatCount(Animation.INFINITE);

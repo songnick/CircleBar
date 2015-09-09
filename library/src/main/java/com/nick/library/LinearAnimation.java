@@ -6,7 +6,7 @@ import android.view.animation.Transformation;
 /**
  * Created by qfsong on 15/9/7.
  */
-public class AccAnimation extends Animation{
+public class LinearAnimation extends Animation{
 
     private AccAnimationListener mListener = null;
 
