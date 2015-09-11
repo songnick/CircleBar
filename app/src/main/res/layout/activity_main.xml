@@ -9,15 +9,18 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:id="@+id/test"/>
-    <com.nick.library.view.RefreshProgress
-        android:layout_width="200dp"
-        android:layout_height="200dp">
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="哈哈都好地方"
-            android:textSize="12sp"
-            android:textColor="@android:color/black"/>
-    </com.nick.library.view.RefreshProgress>
+    <!--<RefreshProgress-->
+        <!--android:layout_width="200dp"-->
+        <!--android:layout_height="200dp">-->
+        <!--<TextView-->
+            <!--android:layout_width="wrap_content"-->
+            <!--android:layout_height="wrap_content"-->
+            <!--android:text="哈哈都好地方"-->
+            <!--android:textSize="12sp"-->
+            <!--android:textColor="@android:color/black"/>-->
+    <!--</RefreshProgress>-->
+    <com.github.songnick.view.SplashProgress
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content" />
 
 </RelativeLayout>

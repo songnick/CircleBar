@@ -1,9 +1,11 @@
-package com.nick.circleprogress;
+package com.github.songnick;
 
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuItem;
+
+import com.nick.circleprogress.R;
 
 public class MainActivity extends AppCompatActivity {
 

@@ -1,9 +1,7 @@
-package com.nick.library;
+package com.github.songnick;
 
 import android.animation.TypeEvaluator;
 import android.util.Log;
-import android.util.TypedValue;
-import android.view.animation.Interpolator;
 
 /**
  * Created by qfsong on 15/9/7.

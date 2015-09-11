@@ -1,4 +1,4 @@
-package com.nick.circleprogress;
+package com.github.songnick;
 
 import android.content.Context;
 import android.graphics.Canvas;
@@ -11,7 +11,6 @@ import android.os.Message;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.view.View;
-import android.widget.LinearLayout;
 
 /**
  * Created by qfsong on 15/8/16.

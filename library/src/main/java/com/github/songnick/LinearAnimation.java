@@ -1,4 +1,4 @@
-package com.nick.library;
+package com.github.songnick;
 
 import android.view.animation.Animation;
 import android.view.animation.Transformation;
@@ -8,9 +8,9 @@ import android.view.animation.Transformation;
  */
 public class LinearAnimation extends Animation{
 
-    private AccAnimationListener mListener = null;
+    private LinearAnimationListener mListener = null;
 
-    public interface AccAnimationListener {
+    public interface LinearAnimationListener {
         void applyTans(float interpolatedTime);
     }
 
@@ -21,7 +21,7 @@ public class LinearAnimation extends Animation{
             mListener.applyTans(interpolatedTime);
     }
 
-    public void setAccAnimationListener(AccAnimationListener listener){
+    public void setLinearAnimationListener(LinearAnimationListener listener){
         mListener = listener;
     }
 }

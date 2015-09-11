@@ -1,4 +1,4 @@
-package com.nick.library.view;
+package com.github.songnick.view;
 
 import android.animation.TimeInterpolator;
 import android.animation.ValueAnimator;
@@ -11,8 +11,8 @@ import android.graphics.RectF;
 import android.util.AttributeSet;
 import android.view.View;
 
-import com.nick.library.LinearAnimation;
-import com.nick.library.AccTypeEvaluator;
+import com.github.songnick.AccTypeEvaluator;
+import com.github.songnick.LinearAnimation;
 import com.nick.library.R;
 
 /**
@@ -20,7 +20,7 @@ import com.nick.library.R;
  * here we need know the circle progress
  * (x-a)^2 + (y-b)^2 = r^2;
  */
-public class AccelerationProgress extends View implements LinearAnimation.AccAnimationListener{
+public class AccelerationProgress extends View implements LinearAnimation.LinearAnimationListener {
 
     private static final int ACC_UPDATE_MSG = 1 << 0;
     private static final long DEFAULT_DURATION = 1500;
