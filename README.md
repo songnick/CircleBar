@@ -1,4 +1,4 @@
 # CircleProgress
 different progress bar, implemet by myself
 
-every day i use differen APP, and i find some funny progress bar; So i think i can implement those by my selft
+Everyday we use different APP, and I find some funny progress bar; So I think I can implement those by my self
