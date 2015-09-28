@@ -67,9 +67,10 @@ public class AccelerationProgress extends View implements LinearAnimation.Linear
     private void init(){
         circlePaint = new Paint();
         circlePaint.setAntiAlias(true);
-        circlePaint.setColor(Color.RED);
+        circlePaint.setColor(bigCircleColor);
         circlePaint.setStrokeWidth(bigCircleStroke);
         circlePaint.setStyle(Paint.Style.STROKE);
+
 
         accBallPaint = new Paint();
         accBallPaint.setAntiAlias(true);
@@ -114,7 +115,7 @@ public class AccelerationProgress extends View implements LinearAnimation.Linear
 
     private float getBigCircleRadius(){
 
-        return rectF.width() / 2 - accBallRadius / 2 - bigCircleStroke;
+        return rectF.width() / 2 - accBallRadius - bigCircleStroke;
     }
 
     private ValueAnimator animator;
