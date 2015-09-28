@@ -23,7 +23,7 @@ import com.nick.library.R;
 public class AccelerationProgress extends View implements LinearAnimation.LinearAnimationListener {
 
     private static final int ACC_UPDATE_MSG = 1 << 0;
-    private static final long DEFAULT_DURATION = 1500;
+    private static final int DEFAULT_DURATION = 1000;
 
     private Paint circlePaint = null;
     private Paint accBallPaint = null;
@@ -35,7 +35,8 @@ public class AccelerationProgress extends View implements LinearAnimation.Linear
     private float accBallRadius = 0.0f;
     private int accBallBackground = Color.BLUE;
     private float bigCircleStroke = 0.0f;
-    private long duration = DEFAULT_DURATION;
+    private int duration = DEFAULT_DURATION;
+    private int bigCircleColor = Color.RED;
 
 
     public AccelerationProgress(Context context) {
@@ -52,6 +53,8 @@ public class AccelerationProgress extends View implements LinearAnimation.Linear
         accBallRadius = a.getDimension(R.styleable.AccelerationProgress_accBallRadius, 14);
         accBallBackground = a.getColor(R.styleable.AccelerationProgress_accBallBackground, Color.BLUE);
         bigCircleStroke = a.getDimension(R.styleable.AccelerationProgress_bigCircleStroke, 7);
+        bigCircleColor = a.getColor(R.styleable.AccelerationProgress_bigCircleBackground, Color.RED);
+        duration = a.getInt(R.styleable.AccelerationProgress_duration, DEFAULT_DURATION);
         a.recycle();
         init();
     }
@@ -164,7 +167,7 @@ public class AccelerationProgress extends View implements LinearAnimation.Linear
         stopAnimation();
     }
 
-    public void setDuration(long duration){
+    public void setDuration(int duration){
         this.duration = duration;
     }
 

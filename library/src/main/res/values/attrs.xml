@@ -5,5 +5,6 @@
         <attr name="bigCircleStroke" format="dimension"></attr>
         <attr name="accBallBackground" format="color"></attr>
         <attr name="bigCircleBackground" format="color"></attr>
+        <attr name="duration" format="integer"></attr>
     </declare-styleable>
 </resources>

@@ -12,6 +12,8 @@ import android.view.animation.LinearInterpolator;
 
 import com.github.songnick.LinearAnimation;
 
+import java.util.Random;
+
 /**
  * Created by qfsong on 15/9/10.
  */
@@ -67,6 +69,7 @@ public class SplashProgress extends View {
         LinearAnimation animation = new LinearAnimation();
         animation.setDuration(10 * 1000);
         animation.setRepeatCount(1);
+        Random random  = new Random();
         animation.setInterpolator(new LinearInterpolator());
         animation.setLinearAnimationListener(new LinearAnimation.LinearAnimationListener() {
             @Override
