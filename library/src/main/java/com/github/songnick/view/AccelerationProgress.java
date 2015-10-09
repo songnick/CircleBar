@@ -25,18 +25,24 @@ public class AccelerationProgress extends View implements LinearAnimation.Linear
     private static final int ACC_UPDATE_MSG = 1 << 0;
     private static final int DEFAULT_DURATION = 1000;
 
-    private Paint circlePaint = null;
-    private Paint accBallPaint = null;
+    //paint
+    private Paint mCirclePaint = null;
+    private Paint mAccBallPaint = null;
+    private Paint mHookPaint = null;
+
+
     private RectF rectF = null;
     private int acc = 0;
     private float ratio = 0.0f;
     private LinearAnimation mAccAnimation = null;
 
-    private float accBallRadius = 0.0f;
-    private int accBallBackground = Color.BLUE;
-    private float bigCircleStroke = 0.0f;
-    private int duration = DEFAULT_DURATION;
-    private int bigCircleColor = Color.RED;
+    private float mAccBallRadius = 0.0f;
+    private int mAccBallBackground = Color.BLUE;
+    private float mBigCircleStroke = 0.0f;
+    private int mDuration = DEFAULT_DURATION;
+    private int mBigCircleColor = Color.RED;
+
+    private boolean mLoadingCompleted = false;
 
 
     public AccelerationProgress(Context context) {
@@ -50,11 +56,11 @@ public class AccelerationProgress extends View implements LinearAnimation.Linear
     public AccelerationProgress(Context context, AttributeSet attrs, int defStyleAttr) {
         super(context, attrs, defStyleAttr);
         TypedArray a = context.getTheme().obtainStyledAttributes(attrs, R.styleable.AccelerationProgress, 0, 0);
-        accBallRadius = a.getDimension(R.styleable.AccelerationProgress_accBallRadius, 14);
-        accBallBackground = a.getColor(R.styleable.AccelerationProgress_accBallBackground, Color.BLUE);
-        bigCircleStroke = a.getDimension(R.styleable.AccelerationProgress_bigCircleStroke, 7);
-        bigCircleColor = a.getColor(R.styleable.AccelerationProgress_bigCircleBackground, Color.RED);
-        duration = a.getInt(R.styleable.AccelerationProgress_duration, DEFAULT_DURATION);
+        mAccBallRadius = a.getDimension(R.styleable.AccelerationProgress_accBallRadius, 14);
+        mAccBallBackground = a.getColor(R.styleable.AccelerationProgress_accBallBackground, Color.BLUE);
+        mBigCircleStroke = a.getDimension(R.styleable.AccelerationProgress_bigCircleStroke, 7);
+        mBigCircleColor = a.getColor(R.styleable.AccelerationProgress_bigCircleBackground, Color.RED);
+        mDuration = a.getInt(R.styleable.AccelerationProgress_duration, DEFAULT_DURATION);
         a.recycle();
         init();
     }
@@ -65,17 +71,24 @@ public class AccelerationProgress extends View implements LinearAnimation.Linear
     }
 
     private void init(){
-        circlePaint = new Paint();
-        circlePaint.setAntiAlias(true);
-        circlePaint.setColor(bigCircleColor);
-        circlePaint.setStrokeWidth(bigCircleStroke);
-        circlePaint.setStyle(Paint.Style.STROKE);
+        mCirclePaint = new Paint();
+        mCirclePaint.setAntiAlias(true);
+        mCirclePaint.setColor(mBigCircleColor);
+        mCirclePaint.setStrokeWidth(mBigCircleStroke);
+        mCirclePaint.setStyle(Paint.Style.STROKE);
 
 
-        accBallPaint = new Paint();
-        accBallPaint.setAntiAlias(true);
-        accBallPaint.setColor(accBallBackground);
-        accBallPaint.setStyle(Paint.Style.FILL);
+        mAccBallPaint = new Paint();
+        mAccBallPaint.setAntiAlias(true);
+        mAccBallPaint.setColor(mAccBallBackground);
+        mAccBallPaint.setStyle(Paint.Style.FILL);
+
+        //hook paint
+        mHookPaint = new Paint();
+        mHookPaint.setAntiAlias(true);
+        mHookPaint.setColor(Color.WHITE);
+        mHookPaint.setStyle(Paint.Style.FILL);
+
         rectF = new RectF();
     }
 
@@ -84,6 +97,31 @@ public class AccelerationProgress extends View implements LinearAnimation.Linear
         super.onMeasure(widthMeasureSpec, heightMeasureSpec);
         int width = MeasureSpec.getSize(widthMeasureSpec);
         int height = MeasureSpec.getSize(heightMeasureSpec);
+        int widthMode = MeasureSpec.getMode(widthMeasureSpec);
+        int heightMode = MeasureSpec.getMode(heightMeasureSpec);
+
+        //confirm the max width
+        switch (widthMode){
+            case MeasureSpec.AT_MOST:
+
+                break;
+
+            case MeasureSpec.UNSPECIFIED:
+
+                break;
+        }
+
+        //confirm the max height
+        //if the height is not defined, set the default one
+        switch (heightMode){
+            case MeasureSpec.AT_MOST:
+
+                break;
+
+            case MeasureSpec.UNSPECIFIED:
+
+                break;
+        }
 
         rectF.set(0, 0, width, height);
     }
@@ -92,12 +130,17 @@ public class AccelerationProgress extends View implements LinearAnimation.Linear
     protected void onDraw(Canvas canvas) {
 
         drawBigCircle(canvas);
-        //draw acc ball
-        drawAccBall(canvas);
+        if (!mLoadingCompleted){
+            //draw acc ball
+            drawAccBall(canvas);
+        }else {
+            drawHook(canvas);
+        }
+
     }
 
     private void drawBigCircle(Canvas canvas){
-        canvas.drawCircle(rectF.centerX(), rectF.centerY(), getBigCircleRadius(), circlePaint);
+        canvas.drawCircle(rectF.centerX(), rectF.centerY(), getBigCircleRadius(), mCirclePaint);
     }
 
     private void drawAccBall(Canvas canvas){
@@ -109,13 +152,17 @@ public class AccelerationProgress extends View implements LinearAnimation.Linear
         int restoreCount = canvas.save();
         //change aix center position
         canvas.translate(rectF.centerX(), rectF.centerY());
-        canvas.drawCircle(x, y, accBallRadius, accBallPaint);
+        canvas.drawCircle(x, y, mAccBallRadius, mAccBallPaint);
         canvas.restoreToCount(restoreCount);
+    }
+
+    private void drawHook(Canvas canvas){
+        
     }
 
     private float getBigCircleRadius(){
 
-        return rectF.width() / 2 - accBallRadius - bigCircleStroke;
+        return rectF.width() / 2 - mAccBallRadius - mBigCircleStroke;
     }
 
     private ValueAnimator animator;
@@ -132,7 +179,7 @@ public class AccelerationProgress extends View implements LinearAnimation.Linear
 
         AccTypeEvaluator accCore = new AccTypeEvaluator();
         animator = ValueAnimator.ofObject(accCore, 0.0f, 360.0f);
-        animator.setDuration(duration);
+        animator.setDuration(mDuration);
         animator.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
             @Override
             public void onAnimationUpdate(ValueAnimator animation) {
@@ -169,7 +216,17 @@ public class AccelerationProgress extends View implements LinearAnimation.Linear
     }
 
     public void setDuration(int duration){
-        this.duration = duration;
+        this.mDuration = duration;
     }
 
+    /**
+     * if loading is completed, draw the hook
+     *
+     * @param complete loading is completed
+     * */
+    public void loadCompleted(boolean complete){
+        mLoadingCompleted = complete;
+        clearAnimation();
+        invalidate();
+    }
 }
