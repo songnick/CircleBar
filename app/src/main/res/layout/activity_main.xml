@@ -4,16 +4,26 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     tools:context=".MainActivity"
-    android:background="@android:color/darker_gray">
+    android:background="@android:color/black">
 
     <com.github.songnick.view.AccelerationProgress
+        android:id="@+id/acc_progress"
         android:layout_width="100dp"
         android:layout_height="100dp"
         circle_progress:accBallBackground="@android:color/white"
         circle_progress:accBallRadius="4dp"
         circle_progress:bigCircleBackground="#b1ffffff"
         circle_progress:bigCircleStroke="1dp"
-        circle_progress:duration="5000"/>
+        circle_progress:duration="1000"
+        android:layout_centerHorizontal="true"/>
+
+    <com.github.songnick.view.RefreshProgress
+        android:layout_width="200dp"
+        android:layout_height="200dp"
+        android:layout_below="@id/acc_progress"
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="10dp"
+        android:background="@android:color/white"/>
 
 
 

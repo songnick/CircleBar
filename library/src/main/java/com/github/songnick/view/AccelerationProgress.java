@@ -7,6 +7,7 @@ import android.content.res.TypedArray;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
+import android.graphics.Path;
 import android.graphics.RectF;
 import android.util.AttributeSet;
 import android.view.View;
@@ -87,7 +88,8 @@ public class AccelerationProgress extends View implements LinearAnimation.Linear
         mHookPaint = new Paint();
         mHookPaint.setAntiAlias(true);
         mHookPaint.setColor(Color.WHITE);
-        mHookPaint.setStyle(Paint.Style.FILL);
+        mHookPaint.setStrokeWidth(15);
+        mHookPaint.setStyle(Paint.Style.STROKE);
 
         rectF = new RectF();
     }
@@ -136,7 +138,7 @@ public class AccelerationProgress extends View implements LinearAnimation.Linear
         }else {
             drawHook(canvas);
         }
-
+        drawHook(canvas);
     }
 
     private void drawBigCircle(Canvas canvas){
@@ -157,7 +159,20 @@ public class AccelerationProgress extends View implements LinearAnimation.Linear
     }
 
     private void drawHook(Canvas canvas){
-        
+        Path hookPath = new Path();
+        double sweepAngle = Math.PI/180 * 180;
+        float y = (float) Math.sin(sweepAngle)*(getBigCircleRadius()) + rectF.height()/2;
+        float x = (float)Math.cos(sweepAngle)*(getBigCircleRadius()) + rectF.width()/2;
+//        int count = canvas.getSaveCount();
+//        hookPath.moveTo(x, y);
+        float i = rectF.centerX()/2;
+        hookPath.moveTo(rectF.centerX()/2, rectF.centerY());
+        hookPath.lineTo(i + i*1.732f, rectF.centerY() + rectF.centerY() * 1.732f);
+//        hookPath.setFillType(Path.FillType.EVEN_ODD);
+//        hookPath.rLineTo(50, 150);
+//        hookPath.addRoundRect(0,100,50,150,5, 5, Path.Direction.CCW);
+        hookPath.close();
+        canvas.drawPath(hookPath, mHookPaint);
     }
 
     private float getBigCircleRadius(){
