@@ -6,9 +6,13 @@ import android.content.Context;
 import android.content.res.TypedArray;
 import android.graphics.Canvas;
 import android.graphics.Color;
+import android.graphics.Matrix;
 import android.graphics.Paint;
+import android.graphics.Path;
 import android.graphics.RectF;
 import android.util.AttributeSet;
+import android.util.Log;
+import android.util.TypedValue;
 import android.view.View;
 
 import com.github.songnick.AccTypeEvaluator;
@@ -22,8 +26,12 @@ import com.nick.library.R;
  */
 public class AccelerationProgress extends View implements LinearAnimation.LinearAnimationListener {
 
+    private final String TAG = "AccelerationProgress";
+
     private static final int ACC_UPDATE_MSG = 1 << 0;
     private static final int DEFAULT_DURATION = 1000;
+
+    private static final int DEFAULT_SIZE = 200;
 
     //paint
     private Paint mCirclePaint = null;
@@ -86,8 +94,9 @@ public class AccelerationProgress extends View implements LinearAnimation.Linear
         //hook paint
         mHookPaint = new Paint();
         mHookPaint.setAntiAlias(true);
-        mHookPaint.setColor(Color.WHITE);
-        mHookPaint.setStyle(Paint.Style.FILL);
+        mHookPaint.setColor(Color.parseColor("#e7eaec"));
+        mHookPaint.setStrokeWidth(15);
+        mHookPaint.setStyle(Paint.Style.STROKE);
 
         rectF = new RectF();
     }
@@ -99,15 +108,19 @@ public class AccelerationProgress extends View implements LinearAnimation.Linear
         int height = MeasureSpec.getSize(heightMeasureSpec);
         int widthMode = MeasureSpec.getMode(widthMeasureSpec);
         int heightMode = MeasureSpec.getMode(heightMeasureSpec);
-
         //confirm the max width
         switch (widthMode){
             case MeasureSpec.AT_MOST:
-
+                width = getResources().getDimensionPixelSize(R.dimen.acc_default_size);
+                Log.e(TAG, " width onMeasure mode is AT_MOST");
                 break;
 
             case MeasureSpec.UNSPECIFIED:
-
+                Log.e(TAG, "width onMeasure mode is UNSPECIFIED");
+                break;
+            case MeasureSpec.EXACTLY:
+                //match_parent and with confirmed size
+                Log.e(TAG, "width onMeasure mode is EXACTLY");
                 break;
         }
 
@@ -115,14 +128,19 @@ public class AccelerationProgress extends View implements LinearAnimation.Linear
         //if the height is not defined, set the default one
         switch (heightMode){
             case MeasureSpec.AT_MOST:
-
+                //wrap_content confirmed by parent
+                height = getResources().getDimensionPixelSize(R.dimen.acc_default_size);
+                Log.e(TAG, " height onMeasure mode is AT_MOST");
                 break;
 
             case MeasureSpec.UNSPECIFIED:
-
+                Log.e(TAG, " height onMeasure mode is UNSPECIFIED");
                 break;
         }
-
+        if (width != height){
+            throw new IllegalStateException(" you must make sure this view's height and width is equals");
+        }
+        setMeasuredDimension(width, height);
         rectF.set(0, 0, width, height);
     }
 
@@ -136,7 +154,7 @@ public class AccelerationProgress extends View implements LinearAnimation.Linear
         }else {
             drawHook(canvas);
         }
-
+        drawHook(canvas);
     }
 
     private void drawBigCircle(Canvas canvas){
@@ -157,7 +175,35 @@ public class AccelerationProgress extends View implements LinearAnimation.Linear
     }
 
     private void drawHook(Canvas canvas){
-        
+        Path hookPath = new Path();
+        double sweepAngle = Math.PI/180 * 180;
+        float y = (float) Math.sin(sweepAngle)*(getBigCircleRadius()) + rectF.height()/2;
+        float x = (float)Math.cos(sweepAngle)*(getBigCircleRadius()) + rectF.width()/2;
+//        int count = canvas.getSaveCount();
+//        hookPath.moveTo(x, y);
+        float i = getBigCircleRadius()/2;
+//        hookPath.moveTo(rectF.centerX()/2, rectF.centerY());
+//        hookPath.addRoundRect();
+//        hookPath.lineTo(i + i*1.732f, rectF.centerY() + rectF.centerY() * 1.732f);
+//        hookPath.setFillType(Path.FillType.EVEN_ODD);
+//        hookPath.rLineTo(50, 150);
+//        hookPath.addRoundRect(0,100,50,150,5, 5, Path.Direction.CCW);
+        hookPath.addRoundRect(new RectF(i + i/2, i + i/2, i + i/2 +6, i + i + i/2), 3f, 3f, Path.Direction.CCW);
+//        hookPath.addRect(new RectF(i, i + i, i + 15, i + i + 15f), Path.Direction.CCW);
+        hookPath.addRoundRect(new RectF(i + i/2, (i + i + i/2) - 3f, i + i/2 + i + i, i + i + i/2 + 3f), 3f, 3f, Path.Direction.CCW);
+        Matrix matrix = new Matrix();
+        matrix.reset();
+
+//        matrix.postRotate(260);
+        int restoreCount = canvas.getSaveCount();
+
+        hookPath.close();
+
+        canvas.rotate(-45, rectF.centerX(), rectF.centerY());
+//        canvas.translate(20, 0);
+        canvas.drawPath(hookPath, mHookPaint);
+
+        canvas.restoreToCount(restoreCount);
     }
 
     private float getBigCircleRadius(){

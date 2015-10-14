@@ -105,7 +105,7 @@ public class RefreshProgress extends ViewGroup {
         circlePaint.setColor(Color.RED);
         circlePaint.setStrokeWidth(7);
         circlePaint.setStyle(Paint.Style.STROKE);
-        drawAccProgressbar(startAngle, canvas);
+//        drawAccProgressbar(startAngle, canvas);
 //        canvas.drawCircle(getMeasuredWidth() / 2, getMeasuredHeight() / 2, 120, paint);
         canvas.translate(5, 5);
         canvas.drawPath(getArcPath(), circlePaint);
