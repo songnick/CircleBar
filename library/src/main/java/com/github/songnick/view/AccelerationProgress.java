@@ -1,5 +1,6 @@
 package com.github.songnick.view;
 
+import android.animation.Animator;
 import android.animation.TimeInterpolator;
 import android.animation.ValueAnimator;
 import android.content.Context;
@@ -12,8 +13,8 @@ import android.graphics.Path;
 import android.graphics.RectF;
 import android.util.AttributeSet;
 import android.util.Log;
-import android.util.TypedValue;
 import android.view.View;
+import android.view.animation.LinearInterpolator;
 
 import com.github.songnick.AccTypeEvaluator;
 import com.github.songnick.LinearAnimation;
@@ -28,29 +29,29 @@ public class AccelerationProgress extends View implements LinearAnimation.Linear
 
     private final String TAG = "AccelerationProgress";
 
-    private static final int ACC_UPDATE_MSG = 1 << 0;
     private static final int DEFAULT_DURATION = 1000;
-
-    private static final int DEFAULT_SIZE = 200;
 
     //paint
     private Paint mCirclePaint = null;
     private Paint mAccBallPaint = null;
     private Paint mHookPaint = null;
-
+    private Paint mTextPaint = null;
 
     private RectF rectF = null;
     private int acc = 0;
     private float ratio = 0.0f;
     private LinearAnimation mAccAnimation = null;
 
+    //some default params for this view
     private float mAccBallRadius = 0.0f;
     private int mAccBallBackground = Color.BLUE;
     private float mBigCircleStroke = 0.0f;
     private int mDuration = DEFAULT_DURATION;
     private int mBigCircleColor = Color.RED;
+    private float mTimeTextSize = 20.0f;
 
     private boolean mLoadingCompleted = false;
+    private boolean mNeedDrawTime = false;
 
 
     public AccelerationProgress(Context context) {
@@ -69,6 +70,7 @@ public class AccelerationProgress extends View implements LinearAnimation.Linear
         mBigCircleStroke = a.getDimension(R.styleable.AccelerationProgress_bigCircleStroke, 7);
         mBigCircleColor = a.getColor(R.styleable.AccelerationProgress_bigCircleBackground, Color.RED);
         mDuration = a.getInt(R.styleable.AccelerationProgress_duration, DEFAULT_DURATION);
+        mTimeTextSize = a.getDimensionPixelSize(R.styleable.AccelerationProgress_timeTextSize, 20);
         a.recycle();
         init();
     }
@@ -98,6 +100,12 @@ public class AccelerationProgress extends View implements LinearAnimation.Linear
         mHookPaint.setStrokeWidth(15);
         mHookPaint.setStyle(Paint.Style.STROKE);
 
+        //text paint
+        mTextPaint = new Paint();
+        mTextPaint.setAntiAlias(true);
+        mTextPaint.setColor(Color.BLACK);
+        mTextPaint.setTextAlign(Paint.Align.CENTER);
+        mTextPaint.setTextSize(30);
         rectF = new RectF();
     }
 
@@ -108,11 +116,17 @@ public class AccelerationProgress extends View implements LinearAnimation.Linear
         int height = MeasureSpec.getSize(heightMeasureSpec);
         int widthMode = MeasureSpec.getMode(widthMeasureSpec);
         int heightMode = MeasureSpec.getMode(heightMeasureSpec);
+        int defaultSize = getResources().getDimensionPixelSize(R.dimen.acc_default_size);
         //confirm the max width
         switch (widthMode){
             case MeasureSpec.AT_MOST:
-                width = getResources().getDimensionPixelSize(R.dimen.acc_default_size);
+                Log.e(TAG, " width onMeasure mode is AT_MOST width = " + width);
+                //here we must confirm mini size
+                if (width < defaultSize){
+                    width = defaultSize;
+                }
                 Log.e(TAG, " width onMeasure mode is AT_MOST");
+
                 break;
 
             case MeasureSpec.UNSPECIFIED:
@@ -128,17 +142,17 @@ public class AccelerationProgress extends View implements LinearAnimation.Linear
         //if the height is not defined, set the default one
         switch (heightMode){
             case MeasureSpec.AT_MOST:
+                Log.e(TAG, " height onMeasure mode is AT_MOST height = " + height);
                 //wrap_content confirmed by parent
-                height = getResources().getDimensionPixelSize(R.dimen.acc_default_size);
+                if (height < defaultSize){
+                    height = defaultSize;
+                }
                 Log.e(TAG, " height onMeasure mode is AT_MOST");
                 break;
 
             case MeasureSpec.UNSPECIFIED:
                 Log.e(TAG, " height onMeasure mode is UNSPECIFIED");
                 break;
-        }
-        if (width != height){
-            throw new IllegalStateException(" you must make sure this view's height and width is equals");
         }
         setMeasuredDimension(width, height);
         rectF.set(0, 0, width, height);
@@ -148,13 +162,14 @@ public class AccelerationProgress extends View implements LinearAnimation.Linear
     protected void onDraw(Canvas canvas) {
 
         drawBigCircle(canvas);
+
         if (!mLoadingCompleted){
             //draw acc ball
             drawAccBall(canvas);
         }else {
             drawHook(canvas);
         }
-        drawHook(canvas);
+//        drawHook(canvas);
     }
 
     private void drawBigCircle(Canvas canvas){
@@ -170,10 +185,31 @@ public class AccelerationProgress extends View implements LinearAnimation.Linear
         int restoreCount = canvas.save();
         //change aix center position
         canvas.translate(rectF.centerX(), rectF.centerY());
+        if (mNeedDrawTime){
+            if (mTimeTextSize > mAccBallRadius){
+                mAccBallRadius = mTimeTextSize;
+            }
+        }
         canvas.drawCircle(x, y, mAccBallRadius, mAccBallPaint);
+        if (mNeedDrawTime){
+            RectF textRect = new RectF(x - mAccBallRadius, y - mAccBallRadius, x + mAccBallRadius, y + mAccBallRadius);
+            Paint.FontMetrics fontMetrics = mTextPaint.getFontMetrics();
+            float baseline = textRect.top + (textRect.bottom - textRect.top - fontMetrics.bottom + fontMetrics.top) / 2 - fontMetrics.top;
+            String curTime = String.valueOf(animator.getDuration() / 1000 - animator.getCurrentPlayTime()/1000);
+            if (animator.getCurrentPlayTime() == 0 && !animator.isRunning()) {
+                curTime = String.valueOf(0);
+            }
+            canvas.drawText(curTime, textRect.centerX(), baseline, mTextPaint);
+        }
+
         canvas.restoreToCount(restoreCount);
     }
 
+    /**
+     * There is some bug and it's not perfect.
+     * so we should improve this path for our projection
+     * @param canvas which to draw
+     * */
     private void drawHook(Canvas canvas){
         Path hookPath = new Path();
         double sweepAngle = Math.PI/180 * 180;
@@ -213,6 +249,12 @@ public class AccelerationProgress extends View implements LinearAnimation.Linear
 
     private ValueAnimator animator;
 
+
+    /**
+     * here I use the {@link ValueAnimator}, this this API can be used after the Android3.0
+     * if you want use it below that, you should dependency
+     * <b>https://github.com/JakeWharton/NineOldAndroids</b>
+     * */
     private void startAnimation(){
 //        if (mAccAnimation == null){
 //            mAccAnimation = new LinearAnimation();
@@ -229,20 +271,52 @@ public class AccelerationProgress extends View implements LinearAnimation.Linear
         animator.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
             @Override
             public void onAnimationUpdate(ValueAnimator animation) {
-                Float value = (Float)animation.getAnimatedValue();
+                Float value = (Float) animation.getAnimatedValue();
                 ratio = value;
                 invalidate();
             }
         });
+
         /**
          * as I know the animator's default interpolator is {@link #AccelerateDecelerateInterpolator}
          * if you want to modify the interpolator, use {@link ValueAnimator#setInterpolator(TimeInterpolator)}
          * */
-        animator.setRepeatCount(ValueAnimator.INFINITE);
+        if (mNeedDrawTime){
+            animator.setInterpolator(new LinearInterpolator());
+            animator.setRepeatCount(0);
+            animator.addListener(new Animator.AnimatorListener() {
+                @Override
+                public void onAnimationStart(Animator animation) {
+
+                }
+
+                @Override
+                public void onAnimationEnd(Animator animation) {
+                    if (mCompleteListener != null) {
+                        mCompleteListener.countdownComplete();
+                    }
+                }
+
+                @Override
+                public void onAnimationCancel(Animator animation) {
+
+                }
+
+                @Override
+                public void onAnimationRepeat(Animator animation) {
+
+                }
+            });
+        }else {
+            animator.setRepeatCount(ValueAnimator.INFINITE);
+        }
         animator.start();
     }
 
-    private void stopAnimation(){
+    /**
+     * stop rotating of the ball
+     * */
+    public void stopLoading(){
         animator.removeAllUpdateListeners();
         animator.cancel();
         animator.end();
@@ -252,15 +326,30 @@ public class AccelerationProgress extends View implements LinearAnimation.Linear
     @Override
     protected void onAttachedToWindow() {
         super.onAttachedToWindow();
-        startAnimation();
+//        startAnimation();
     }
 
     @Override
     protected void onDetachedFromWindow() {
         super.onDetachedFromWindow();
-        stopAnimation();
+//        stopLoading();
     }
 
+    @Override
+    public void setVisibility(int visibility) {
+        if (visibility == INVISIBLE || visibility == GONE){
+            stopLoading();
+        }else {
+            clearAnimation();
+            startAnimation();
+        }
+        super.setVisibility(visibility);
+    }
+
+    /**
+     * set duration of this ball rotate a circle
+     * @param duration time of this animation
+     * */
     public void setDuration(int duration){
         this.mDuration = duration;
     }
@@ -274,5 +363,34 @@ public class AccelerationProgress extends View implements LinearAnimation.Linear
         mLoadingCompleted = complete;
         clearAnimation();
         invalidate();
+    }
+
+    public void startLoading(){
+        mLoadingCompleted = false;
+        startAnimation();
+        invalidate();
+    }
+
+    /**
+     * set countdown time, use this time to animation
+     * @param seconds
+     * */
+    public void setCountDownTime(int seconds){
+        setDuration(seconds * 1000);
+        mNeedDrawTime = true;
+    }
+
+    private CountdownCompleteListener mCompleteListener = null;
+
+    public void setCountdownCompleteListener(CountdownCompleteListener listener){
+        mCompleteListener = listener;
+    }
+
+    /**
+     * when animation's time is over, call this interface to
+     * notify caller
+     * */
+    public interface CountdownCompleteListener{
+        void countdownComplete();
     }
 }

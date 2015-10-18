@@ -7,23 +7,48 @@
     android:background="@android:color/black">
 
     <com.github.songnick.view.AccelerationProgress
-        android:id="@+id/acc_progress"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
+        android:id="@+id/acc_progress_loading_complete"
+        android:layout_width="100dp"
+        android:layout_height="100dp"
         circle_progress:accBallBackground="@android:color/white"
         circle_progress:accBallRadius="4dp"
         circle_progress:bigCircleBackground="#b1ffffff"
         circle_progress:bigCircleStroke="1dp"
         circle_progress:duration="1000"
         android:layout_centerHorizontal="true"/>
-
-    <com.github.songnick.view.RefreshProgress
-        android:layout_width="200dp"
-        android:layout_height="200dp"
-        android:layout_below="@id/acc_progress"
+    <com.github.songnick.view.AccelerationProgress
+        android:id="@+id/acc_progress_loading"
+        android:layout_width="100dp"
+        android:layout_height="100dp"
+        circle_progress:accBallBackground="@android:color/white"
+        circle_progress:accBallRadius="4dp"
+        circle_progress:bigCircleBackground="#b1ffffff"
+        circle_progress:bigCircleStroke="1dp"
+        circle_progress:duration="1000"
+        android:layout_below="@id/acc_progress_loading_complete"
         android:layout_centerHorizontal="true"
-        android:layout_marginTop="10dp"
-        android:background="@android:color/white"/>
+        android:layout_marginTop="10dp"/>
+
+    <com.github.songnick.view.AccelerationProgress
+        android:id="@+id/acc_progress_loading_time"
+        android:layout_width="100dp"
+        android:layout_height="100dp"
+        circle_progress:accBallBackground="@android:color/white"
+        circle_progress:accBallRadius="4dp"
+        circle_progress:bigCircleBackground="#b1ffffff"
+        circle_progress:bigCircleStroke="1dp"
+        circle_progress:timeTextSize="10sp"
+        circle_progress:duration="10000"
+        android:layout_below="@id/acc_progress_loading"
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="10dp"/>
+    <!--<com.github.songnick.view.RefreshProgress-->
+        <!--android:layout_width="200dp"-->
+        <!--android:layout_height="200dp"-->
+        <!--android:layout_below="@id/acc_progress"-->
+        <!--android:layout_centerHorizontal="true"-->
+        <!--android:layout_marginTop="10dp"-->
+        <!--android:background="@android:color/white"/>-->
 
 
 

@@ -6,5 +6,6 @@
         <attr name="accBallBackground" format="color"></attr>
         <attr name="bigCircleBackground" format="color"></attr>
         <attr name="duration" format="integer"></attr>
+        <attr name="timeTextSize" format="dimension"></attr>
     </declare-styleable>
 </resources>
