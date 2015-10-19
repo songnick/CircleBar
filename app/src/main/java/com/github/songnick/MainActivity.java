@@ -2,54 +2,91 @@ package com.github.songnick;
 
 import android.os.Handler;
 import android.os.Message;
+import android.support.design.widget.TabLayout;
+import android.support.v4.app.Fragment;
+import android.support.v4.app.FragmentManager;
+import android.support.v4.app.FragmentPagerAdapter;
+import android.support.v4.view.ViewPager;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.support.v7.widget.Toolbar;
 import android.view.Menu;
 import android.view.MenuItem;
 
 import com.github.songnick.view.AccelerationProgress;
 
+import java.util.ArrayList;
+
 public class MainActivity extends AppCompatActivity {
 
     private static final String TAG = "MainActivity";
-    private static final int LOADING_MSG = 0x001;
-    private static final int COMPLETED_MSG = 0x002;
-    private static final int COUNTDOWN_MSG = 0x003;
-    private static final int DELAY_TIME = 5 * 1000;
 
-    private AccelerationProgress mAcc = null;
-    private AccelerationProgress mCountdown = null;
-    private AccelerationProgress mLoading = null;
-
-    private Handler mHandler = new Handler(){
-        @Override
-        public void handleMessage(Message msg) {
-            switch (msg.what){
-                case LOADING_MSG:
-                    mAcc.startLoading();
-                    mHandler.sendEmptyMessageDelayed(COMPLETED_MSG, DELAY_TIME);
-                    break;
-
-                case COMPLETED_MSG:
-                    mAcc.loadCompleted(true);
-                    mHandler.sendEmptyMessageDelayed(LOADING_MSG, DELAY_TIME);
-                    break;
-                case COUNTDOWN_MSG:
-                    mCountdown.startLoading();
-                    break;
-            }
-        }
-    };
+    private ViewPager mViewPager = null;
+    private TabLayout mTabLayout = null;
+    private ArrayList<Fragment> mFragmentList = null;
+    private FragmentAdapter mAdapter = null;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        mAcc = (AccelerationProgress)findViewById(R.id.acc_progress_loading_complete);
-        mCountdown = (AccelerationProgress)findViewById(R.id.acc_progress_loading_time);
-        mLoading = (AccelerationProgress)findViewById(R.id.acc_progress_loading);
+        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
+        setSupportActionBar(toolbar);
+//        TabLayout tabLayout = (TabLayout)findViewById(R.id.tab_layout);
+//        TabLayout.Tab tab = tabLayout.newTab().setCustomView(R.layout.abc_search_view);
+//        tabLayout.addTab(tabLayout.newTab().setText("AccProgressBar"));
+//        tabLayout.addTab(tabLayout.newTab().setText("RefreshProgressBar"));
+//        tabLayout.addTab(tabLayout.newTab().setText("SplashProgressBar"));
+//        tabLayout.setTabMode(TabLayout.MODE_SCROLLABLE);
+        initView();
+        mFragmentList = new ArrayList<>();
+        mFragmentList.add(AccProgressbarFragment.newInstance());
+        mFragmentList.add(RefreshProgressbarFragment.newInstance());
+        mFragmentList.add(AccProgressbarFragment.newInstance());
+        mViewPager.setAdapter(mAdapter = new FragmentAdapter(getSupportFragmentManager(), mFragmentList));
     }
 
+    private void initView(){
+        mViewPager = (ViewPager)findViewById(R.id.view_pager);
+        mTabLayout = (TabLayout)findViewById(R.id.tab_layout);
+
+        mTabLayout.addTab(mTabLayout.newTab().setText("AccProgressbar"));
+        mTabLayout.addTab(mTabLayout.newTab().setText("RefreshProgressbar"));
+        mTabLayout.addTab(mTabLayout.newTab().setText("SplashProgressbar"));
+        mTabLayout.setTabMode(TabLayout.MODE_SCROLLABLE);
+        mTabLayout.setOnTabSelectedListener(new TabLayout.OnTabSelectedListener() {
+            @Override
+            public void onTabSelected(TabLayout.Tab tab) {
+                mViewPager.setCurrentItem(tab.getPosition(), true);
+            }
+
+            @Override
+            public void onTabUnselected(TabLayout.Tab tab) {
+
+            }
+
+            @Override
+            public void onTabReselected(TabLayout.Tab tab) {
+
+            }
+        });
+        mViewPager.addOnPageChangeListener(new ViewPager.OnPageChangeListener() {
+            @Override
+            public void onPageScrolled(int position, float positionOffset, int positionOffsetPixels) {
+                mTabLayout.setScrollPosition(position, positionOffset, false);
+            }
+
+            @Override
+            public void onPageSelected(int position) {
+
+            }
+
+            @Override
+            public void onPageScrollStateChanged(int state) {
+
+            }
+        });
+    }
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         // Inflate the menu; this adds items to the action bar if it is present.
@@ -72,30 +109,30 @@ public class MainActivity extends AppCompatActivity {
         return super.onOptionsItemSelected(item);
     }
 
-    @Override
-    public void onAttachedToWindow() {
-        super.onAttachedToWindow();
-        mAcc.startLoading();
-        mLoading.startLoading();
-        //10 seconds
-        mCountdown.setCountDownTime(10);
-        mCountdown.setCountdownCompleteListener(new AccelerationProgress.CountdownCompleteListener() {
-            @Override
-            public void countdownComplete() {
-                mHandler.sendEmptyMessageDelayed(COUNTDOWN_MSG, 2 * 1000);
-            }
-        });
-        mCountdown.startLoading();
-        mHandler.sendEmptyMessageDelayed(COMPLETED_MSG, DELAY_TIME);
-//        mCountdown.setCountDownTime(10 * 1000);
-    }
+    private final class FragmentAdapter extends FragmentPagerAdapter{
 
-    @Override
-    public void onDetachedFromWindow() {
-        mAcc.stopLoading();
-        mLoading.stopLoading();
-        mCountdown.stopLoading();
-        mHandler.removeCallbacksAndMessages(null);
-        super.onDetachedFromWindow();
+        private ArrayList<Fragment> fragments = null;
+
+        @Override
+        public Fragment getItem(int position) {
+            return fragments.get(position);
+        }
+
+        public FragmentAdapter(FragmentManager fm) {
+            super(fm);
+            fragments = new ArrayList<>();
+        }
+
+        public FragmentAdapter(FragmentManager fm, ArrayList<Fragment> fragmentArrayList){
+            super(fm);
+            if (fragmentArrayList != null){
+                fragments = fragmentArrayList;
+            }
+        }
+
+        @Override
+        public int getCount() {
+            return fragments.size();
+        }
     }
 }
