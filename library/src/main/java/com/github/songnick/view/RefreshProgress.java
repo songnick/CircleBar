@@ -10,6 +10,7 @@ import android.graphics.RectF;
 import android.graphics.SweepGradient;
 import android.util.AttributeSet;
 import android.util.Log;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.animation.Animation;
@@ -21,6 +22,12 @@ import com.github.songnick.LinearAnimation;
  * Created by qfsong on 15/9/8.
  */
 public class RefreshProgress extends ViewGroup {
+
+    private static final String TAG = "RefreshProgress";
+
+    private boolean isDrawAccProgress = false;
+
+
     public RefreshProgress(Context context) {
         this(context, null);
     }
@@ -59,9 +66,11 @@ public class RefreshProgress extends ViewGroup {
         defaultHeight = defaultHeight + getPaddingTop() + getPaddingBottom();
         switch (widthMode){
             case  MeasureSpec.EXACTLY:
+                //the size is confirmed - match parent or dd
                 Log.d("", " onLayout is size == mode exactly");
                 break;
             case MeasureSpec.AT_MOST:
+                //wrap_content
                 Log.d("", " onLayout is size == mode AT_MOST");
                 break;
             case MeasureSpec.UNSPECIFIED:
@@ -82,13 +91,17 @@ public class RefreshProgress extends ViewGroup {
 
         }
         Log.d("", " onLayout is size == mode UNSPECIFIED default height = " + defaultHeight);
-//        setMeasuredDimension(defaultWidth, defaultHeight);
+        setMeasuredDimension(width, height);
+        rectF.set(17, 17, width - 17, height - 17);
     }
 
     @Override
     protected void onLayout(boolean changed, int l, int t, int r, int b) {
         Log.d("", " onLayout is size == " + "left == " + l + " top " + t + "right " + r + " bottom = " + b);
         int childCount = getChildCount();
+        if (childCount >= 2){
+            throw new IllegalStateException("this layout must have one child ");
+        }
         for (int i = 0; i < childCount; i++){
             View child = getChildAt(i);
 
@@ -100,14 +113,20 @@ public class RefreshProgress extends ViewGroup {
     @Override
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
+        if (isDrawAccProgress){
+            drawAccProgressbar(startAngle, canvas);
+        }else {
+            drawSlowIndicator(startAngle, canvas);
+        }
+
+    }
+
+    private void drawSlowIndicator(float startAngle, Canvas canvas){
         Paint circlePaint = new Paint();
         circlePaint.setAntiAlias(true);
         circlePaint.setColor(Color.RED);
         circlePaint.setStrokeWidth(7);
         circlePaint.setStyle(Paint.Style.STROKE);
-//        drawAccProgressbar(startAngle, canvas);
-//        canvas.drawCircle(getMeasuredWidth() / 2, getMeasuredHeight() / 2, 120, paint);
-        canvas.translate(5, 5);
         canvas.drawPath(getArcPath(), circlePaint);
         canvas.translate(rectF.centerX(), rectF.centerY());
         circlePaint.setStyle(Paint.Style.FILL);
@@ -121,31 +140,31 @@ public class RefreshProgress extends ViewGroup {
         paint.setAntiAlias(true);
         paint.setStrokeWidth(8);
         paint.setStyle(Paint.Style.STROKE);
-        int[] f = {Color.parseColor("#00000000"), Color.parseColor("#ff000000")};
+        int[] f = {Color.parseColor("#00FF0000"), Color.parseColor("#ffFF0000")};
         float[] p = {.0f, 1.0f};
 //        paint.setShader(new LinearGradient(getMeasuredWidth() / 2 - 120, getMeasuredHeight() / 2, getMeasuredWidth() / 2 , getMeasuredHeight()/2 - 120, Color.parseColor("#000000"), Color.parseColor("#ffffff"), LinearGradient.TileMode.CLAMP));
-        SweepGradient sweepGradient = new SweepGradient(getMeasuredWidth()/2 - 8, getMeasuredHeight()/2 - 8, f, p);
+        SweepGradient sweepGradient = new SweepGradient(rectF.centerX(), rectF.centerX(), f, p);
         Matrix matrix = new Matrix();
         sweepGradient.getLocalMatrix(matrix);
-        matrix.postRotate(startAngle, getMeasuredWidth() / 2 - 8, getMeasuredHeight() / 2 - 8);
+        matrix.postRotate(startAngle, rectF.centerX(), rectF.centerY());
         sweepGradient.setLocalMatrix(matrix);
         paint.setShader(sweepGradient);
 
-        canvas.drawArc(new RectF(8, 8, getMeasuredWidth()-8, getMeasuredHeight()-8),0, 360, false, paint);
+        canvas.drawArc(rectF,0, 360, true, paint);
 
         int count = canvas.save();
-        canvas.translate(getMeasuredWidth()/2 - 8, getMeasuredHeight() / 2 - 8);
+        canvas.translate(rectF.centerX(), rectF.centerY());
         double sweepAngle = Math.PI / 180 * startAngle;
         Path path = new Path();
-        float y = (float)Math.sin(sweepAngle)*(getMeasuredWidth()/2 - 8);
-        float x = (float)Math.cos(sweepAngle)*(getMeasuredHeight() / 2 - 8);
+        float y = (float)Math.sin(sweepAngle)*(rectF.width()/2);
+        float x = (float)Math.cos(sweepAngle)*(rectF.width()/2);
 //        path.moveTo(rectF.centerX(), rectF.centerY());
         path.moveTo(x, y);
         path.addCircle(x, y, 10, Path.Direction.CCW);
         Paint circlePaint = new Paint();
         circlePaint.setAntiAlias(true);
-        circlePaint.setColor(Color.RED);
-        circlePaint.setStrokeWidth(7);
+        circlePaint.setColor(Color.WHITE);
+//        circlePaint.setStrokeWidth(7);
         circlePaint.setStyle(Paint.Style.FILL);
         canvas.drawPath(path, circlePaint);
         canvas.restoreToCount(count);
@@ -184,9 +203,11 @@ public class RefreshProgress extends ViewGroup {
         return null;
     }
 
-    private void startRotate(){
+    private void startRotate(long duration, boolean acc){
+//        clearAnimation();
+        isDrawAccProgress = acc;
         LinearAnimation animation = new LinearAnimation();
-        animation.setDuration(10 * 1000);
+        animation.setDuration(duration);
         animation.setRepeatCount(Animation.INFINITE);
         animation.setInterpolator(new LinearInterpolator());
         animation.setLinearAnimationListener(new LinearAnimation.LinearAnimationListener() {
@@ -196,7 +217,6 @@ public class RefreshProgress extends ViewGroup {
                 invalidate();
             }
         });
-
         startAnimation(animation);
     }
 
@@ -204,15 +224,28 @@ public class RefreshProgress extends ViewGroup {
         clearAnimation();
     }
 
+
     @Override
     protected void onAttachedToWindow() {
         super.onAttachedToWindow();
-        startRotate();
+        startRotate(10 * 1000, false);
     }
 
     @Override
     protected void onDetachedFromWindow() {
         super.onDetachedFromWindow();
         stopRotate();
+    }
+
+    @Override
+    public boolean onTouchEvent(MotionEvent event) {
+        if (isDrawAccProgress){
+            stopRotate();
+            startRotate(10 * 1000, false);
+        }else {
+            stopRotate();
+            startRotate(1 * 1000, true);
+        }
+        return super.onTouchEvent(event);
     }
 }
