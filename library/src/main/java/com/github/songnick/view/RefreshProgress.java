@@ -124,15 +124,17 @@ public class RefreshProgress extends ViewGroup {
     private void drawSlowIndicator(float startAngle, Canvas canvas){
         Paint circlePaint = new Paint();
         circlePaint.setAntiAlias(true);
-        circlePaint.setColor(Color.RED);
+        circlePaint.setColor(Color.parseColor("#A8D7A7"));
         circlePaint.setStrokeWidth(7);
         circlePaint.setStyle(Paint.Style.STROKE);
         canvas.drawPath(getArcPath(), circlePaint);
+        int restoreCount = canvas.save();
         canvas.translate(rectF.centerX(), rectF.centerY());
         circlePaint.setStyle(Paint.Style.FILL);
         canvas.drawPath(getBallPath(startAngle + 90), circlePaint);
         canvas.drawPath(getBallPath(startAngle + 90 + 30 + 90), circlePaint);
         canvas.drawPath(getBallPath(startAngle + 90 + 30 + 90 + 30 + 90), circlePaint);
+        canvas.restoreToCount(restoreCount);
     }
 
     private void drawAccProgressbar(float startAngle, Canvas canvas){
@@ -140,7 +142,7 @@ public class RefreshProgress extends ViewGroup {
         paint.setAntiAlias(true);
         paint.setStrokeWidth(8);
         paint.setStyle(Paint.Style.STROKE);
-        int[] f = {Color.parseColor("#00FF0000"), Color.parseColor("#ffFF0000")};
+        int[] f = {Color.parseColor("#00A8D7A7"), Color.parseColor("#ffA8D7A7")};
         float[] p = {.0f, 1.0f};
 //        paint.setShader(new LinearGradient(getMeasuredWidth() / 2 - 120, getMeasuredHeight() / 2, getMeasuredWidth() / 2 , getMeasuredHeight()/2 - 120, Color.parseColor("#000000"), Color.parseColor("#ffffff"), LinearGradient.TileMode.CLAMP));
         SweepGradient sweepGradient = new SweepGradient(rectF.centerX(), rectF.centerX(), f, p);

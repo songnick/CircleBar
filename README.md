@@ -11,3 +11,11 @@ This progressbar is from my phone (HuaWei P7)
 My implement is below.But this is simple implement
 ![alt tag](/screenshot/my_implement.gif)
 
+2. RefreshProgress
+This progressbar is from Moto X(company's test device)
+![alt tag](/screenshot/moto.gif)
+
+below it's my simple implement
+
+![alt tag](/screenshot/refresh.gif)
+
