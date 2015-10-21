@@ -12,6 +12,7 @@ My implement is below.But this is simple implement
 ![alt tag](/screenshot/my_implement.gif)
 
 2. RefreshProgress
+
 This progressbar is from Moto X(company's test device)
 ![alt tag](/screenshot/moto.gif)
 
