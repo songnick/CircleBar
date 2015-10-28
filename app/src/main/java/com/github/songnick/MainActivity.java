@@ -1,19 +1,18 @@
 package com.github.songnick;
 
-import android.os.Handler;
-import android.os.Message;
+import android.os.Bundle;
 import android.support.design.widget.TabLayout;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentPagerAdapter;
 import android.support.v4.view.ViewPager;
+import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.AppCompatActivity;
-import android.os.Bundle;
 import android.support.v7.widget.Toolbar;
+import android.view.Gravity;
 import android.view.Menu;
 import android.view.MenuItem;
-
-import com.github.songnick.view.AccelerationProgress;
+import android.view.View;
 
 import java.util.ArrayList;
 
@@ -25,6 +24,7 @@ public class MainActivity extends AppCompatActivity {
     private TabLayout mTabLayout = null;
     private ArrayList<Fragment> mFragmentList = null;
     private FragmentAdapter mAdapter = null;
+    private DrawerLayout mDrawerLayout = null;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -32,6 +32,13 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
+        toolbar.setNavigationIcon(R.drawable.ic_format_list_bulleted_black_24dp);
+        toolbar.setNavigationOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                mDrawerLayout.openDrawer(Gravity.LEFT);
+            }
+        });
 //        TabLayout tabLayout = (TabLayout)findViewById(R.id.tab_layout);
 //        TabLayout.Tab tab = tabLayout.newTab().setCustomView(R.layout.abc_search_view);
 //        tabLayout.addTab(tabLayout.newTab().setText("AccProgressBar"));
@@ -42,18 +49,19 @@ public class MainActivity extends AppCompatActivity {
         mFragmentList = new ArrayList<>();
         mFragmentList.add(AccProgressbarFragment.newInstance());
         mFragmentList.add(RefreshProgressbarFragment.newInstance());
-        mFragmentList.add(AccProgressbarFragment.newInstance());
+        mFragmentList.add(SplashProFragment.newInstance());
         mViewPager.setAdapter(mAdapter = new FragmentAdapter(getSupportFragmentManager(), mFragmentList));
     }
 
     private void initView(){
         mViewPager = (ViewPager)findViewById(R.id.view_pager);
         mTabLayout = (TabLayout)findViewById(R.id.tab_layout);
+        mDrawerLayout = (DrawerLayout)findViewById(R.id.drawe_layout);
+        mTabLayout.addTab(mTabLayout.newTab().setText("Acc"));
+        mTabLayout.addTab(mTabLayout.newTab().setText("Refresh"));
+        mTabLayout.addTab(mTabLayout.newTab().setText("Splash"));
+        mTabLayout.setTabMode(TabLayout.MODE_FIXED);
 
-        mTabLayout.addTab(mTabLayout.newTab().setText("AccProgressbar"));
-        mTabLayout.addTab(mTabLayout.newTab().setText("RefreshProgressbar"));
-        mTabLayout.addTab(mTabLayout.newTab().setText("SplashProgressbar"));
-        mTabLayout.setTabMode(TabLayout.MODE_SCROLLABLE);
         mTabLayout.setOnTabSelectedListener(new TabLayout.OnTabSelectedListener() {
             @Override
             public void onTabSelected(TabLayout.Tab tab) {
@@ -73,7 +81,8 @@ public class MainActivity extends AppCompatActivity {
         mViewPager.addOnPageChangeListener(new ViewPager.OnPageChangeListener() {
             @Override
             public void onPageScrolled(int position, float positionOffset, int positionOffsetPixels) {
-                mTabLayout.setScrollPosition(position, positionOffset, false);
+                mTabLayout.setScrollPosition(position, positionOffset, true);
+
             }
 
             @Override
