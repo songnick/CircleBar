@@ -96,7 +96,7 @@ public class AccelerationProgress extends View implements LinearAnimation.Linear
         //hook paint
         mHookPaint = new Paint();
         mHookPaint.setAntiAlias(true);
-        mHookPaint.setColor(Color.parseColor("#e7eaec"));
+        mHookPaint.setColor(Color.parseColor("#FF4444"));
         mHookPaint.setStrokeWidth(15);
         mHookPaint.setStyle(Paint.Style.STROKE);
 

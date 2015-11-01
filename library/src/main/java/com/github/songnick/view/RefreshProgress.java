@@ -8,6 +8,8 @@ import android.graphics.Paint;
 import android.graphics.Path;
 import android.graphics.RectF;
 import android.graphics.SweepGradient;
+import android.os.Handler;
+import android.os.Message;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.view.MotionEvent;
@@ -24,8 +26,28 @@ import com.github.songnick.LinearAnimation;
 public class RefreshProgress extends ViewGroup {
 
     private static final String TAG = "RefreshProgress";
+    private static final int ROTATE_MSG = 0x033;
+    private static final int REFRESH_MSG = 0x044;
 
     private boolean isDrawAccProgress = false;
+
+    private Handler mHandler = new Handler(){
+        @Override
+        public void handleMessage(Message msg) {
+            switch (msg.what){
+                case ROTATE_MSG:
+                    clearAnimation();
+                    startRotate(10 * 1000, false);
+                    mHandler.sendEmptyMessageDelayed(REFRESH_MSG, 3000);
+                    break;
+                case REFRESH_MSG:
+                    stopRotate();
+                    startRotate(1 * 1000, true);
+                    mHandler.sendEmptyMessageDelayed(ROTATE_MSG, 3000);
+                    break;
+            }
+        }
+    };
 
 
     public RefreshProgress(Context context) {
@@ -230,7 +252,7 @@ public class RefreshProgress extends ViewGroup {
     @Override
     protected void onAttachedToWindow() {
         super.onAttachedToWindow();
-        startRotate(10 * 1000, false);
+        mHandler.sendEmptyMessageDelayed(ROTATE_MSG, 500);
     }
 
     @Override
