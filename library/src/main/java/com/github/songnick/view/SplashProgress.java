@@ -113,7 +113,7 @@ public class SplashProgress extends View {
                 Log.d("", " straaaaaaaa == " + interpolatedTime);
                 float ratio = 1.0f - interpolatedTime;
                 mBallPaint.setAlpha((int)(ratio*255));
-                mRadius = (1.0f - interpolatedTime)*80;
+                mRadius = (1.0f - interpolatedTime)*40;
                 mBigRadius = getMeasuredHeight() / 2 * ratio;
                 invalidate();
             }

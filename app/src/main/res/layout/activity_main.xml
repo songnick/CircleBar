@@ -16,17 +16,10 @@
             android:layout_width="match_parent"
             android:minHeight="?attr/actionBarSize"
             android:background="?attr/colorPrimary" />
-        <android.support.design.widget.TabLayout
-            android:id="@+id/tab_layout"
+        <FrameLayout
+            android:id="@+id/container_fragment"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content">
-        </android.support.design.widget.TabLayout>
-
-        <android.support.v4.view.ViewPager
-            android:id="@+id/view_pager"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent" />
-
+            android:layout_height="match_parent"></FrameLayout>
     </LinearLayout>
     <fragment
         android:id="@+id/navigation_drawer"

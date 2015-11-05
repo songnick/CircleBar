@@ -2,16 +2,16 @@ package com.github.songnick.viewgroup;
 
 import android.content.Context;
 import android.support.v4.view.MotionEventCompat;
-import android.support.v4.view.VelocityTrackerCompat;
 import android.support.v4.view.ViewCompat;
 import android.support.v4.widget.ScrollerCompat;
 import android.util.AttributeSet;
-import android.util.Log;
 import android.view.MotionEvent;
 import android.view.VelocityTracker;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.animation.Interpolator;
+
+import com.github.songnick.utils.LogUtils;
 
 /**
  * Created by qfsong on 15/10/26.
@@ -110,7 +110,7 @@ public class SlideViewPager extends ViewGroup {
     private static final Interpolator sInterpolator = new Interpolator() {
         public float getInterpolation(float t) {
             t -= 1.0f;
-            return t * t * t * t * t + 1.0f;
+            return t * t * t  + 1.0f;
         }
     };
 
@@ -119,32 +119,6 @@ public class SlideViewPager extends ViewGroup {
         return super.onInterceptTouchEvent(ev);
     }
 
-    /**
-     * Clamp the magnitude of value for absMin and absMax.
-     * If the value is below the minimum, it will be clamped to zero.
-     * If the value is above the maximum, it will be clamped to the maximum.
-     *
-     * @param value Value to clamp
-     * @param absMin Absolute value of the minimum significant value to return
-     * @param absMax Absolute value of the maximum value to return
-     * @return The clamped value with the same sign as <code>value</code>
-     */
-    private float clampMag(float value, float absMin, float absMax) {
-        final float absValue = Math.abs(value);
-        if (absValue < absMin) return 0;
-        if (absValue > absMax) return value > 0 ? absMax : -absMax;
-        return value;
-    }
-
-    private void releaseViewForPointerUp() {
-        mVelocityTracker.computeCurrentVelocity(1000, mMaxVelocity);
-        final float xvel = clampMag(
-                VelocityTrackerCompat.getXVelocity(mVelocityTracker, mActivePointerId),
-                mMinVelocity, mMaxVelocity);
-        if (xvel != 0){
-            slidToDestination();
-        }
-    }
 
     /**
      * The result of a call to this method is equivalent to
@@ -175,40 +149,73 @@ public class SlideViewPager extends ViewGroup {
 
                 break;
             case MotionEvent.ACTION_MOVE:
-                if (getChildAt(0).getLeft() == 0 ){
-                    Log.e(TAG, " dddddddddd");
-                }
+                //calculate moving distance
                 float distance = -(event.getRawX() - mDownX);
                 mDownX = event.getRawX();
-                Log.e(TAG, " current distance == " + distance);
+                LogUtils.LogD(TAG, " current distance == " + distance);
                 scrollBy((int) distance, 0);
                 if (distance < 0){
                     scaleChild(mCurrentPosition, LEFT_TO_RIGHT);
                 }else {
+                    LogUtils.LogD(TAG, " current direction is right to left and current child position =  " + mCurrentPosition);
                     scaleChild(mCurrentPosition, RIGHT_TO_LEFT);
                 }
 
                 break;
             case MotionEvent.ACTION_UP:
-                mVelocityTracker.computeCurrentVelocity(1000);
-                float xVel = mVelocityTracker.getXVelocity();
-                if (xVel > SNAP_VELOCITY && mCurrentPosition > 0){
-                    slidToScreen(mCurrentPosition - 1);
-                }else if (xVel < -SNAP_VELOCITY && mCurrentPosition < getChildCount() - 1){
-                    slidToScreen(mCurrentPosition + 1);
-                }else {
-                    slidToDestination();
-                }
-                if (mVelocityTracker != null){
-                    mVelocityTracker.recycle();
-                    mVelocityTracker = null;
-                }
+                releaseViewForPointerUp();
+                cancel();
                 break;
         }
         return true;
     }
 
-    private void slidToDestination(){
+    /**
+     * Clamp the magnitude of value for absMin and absMax.
+     * If the value is below the minimum, it will be clamped to zero.
+     * If the value is above the maximum, it will be clamped to the maximum.
+     *
+     * @param value Value to clamp
+     * @param absMin Absolute value of the minimum significant value to return
+     * @param absMax Absolute value of the maximum value to return
+     * @return The clamped value with the same sign as <code>value</code>
+     */
+    private float clampMag(float value, float absMin, float absMax) {
+        final float absValue = Math.abs(value);
+        if (absValue < absMin) return 0;
+        if (absValue > absMax) return value > 0 ? absMax : -absMax;
+        return value;
+    }
+
+    private void releaseViewForPointerUp() {
+//        mVelocityTracker.computeCurrentVelocity(1000, mMaxVelocity);
+//        final float xvel = clampMag(
+//                VelocityTrackerCompat.getXVelocity(mVelocityTracker, mActivePointerId),
+//                mMinVelocity, mMaxVelocity);
+//        if (xvel != 0){
+//            smoothScrollToDes();
+//        }
+        mVelocityTracker.computeCurrentVelocity(1000);
+        float xVel = mVelocityTracker.getXVelocity();
+        if (xVel > SNAP_VELOCITY && mCurrentPosition > 0){
+            smoothScrollToView(mCurrentPosition - 1);
+        }else if (xVel < -SNAP_VELOCITY && mCurrentPosition < getChildCount() - 1){
+            smoothScrollToView(mCurrentPosition + 1);
+        }else {
+            smoothScrollToDes();
+        }
+    }
+    /**
+     * when user touch up, invoke this method,
+     * and scroll to confirmed view smoothly
+     * */
+    private void smoothScrollToDes(){
+//        //user release the view, so current direction is invalid
+//        if (mCurrentDir == LEFT_TO_RIGHT){
+//            mCurrentDir = RIGHT_TO_LEFT;
+//        }else {
+//            mCurrentDir = LEFT_TO_RIGHT;
+//        }
         int scrollX = getScrollX();
         int position = (scrollX + 1080/2)/1080;
         int dx = position * (1080 - MARGIN_LEFT_RIGHT * 2) - scrollX;
@@ -216,7 +223,7 @@ public class SlideViewPager extends ViewGroup {
         invalidate();
     }
 
-    private void slidToScreen(int position){
+    private void smoothScrollToView(int position){
         mCurrentPosition = position;
         if (mCurrentPosition > getChildCount()-1){
             mCurrentPosition = getChildCount() - 1;
@@ -230,42 +237,64 @@ public class SlideViewPager extends ViewGroup {
     public void computeScroll() {
 //        super.computeScroll();
         if (mScroller.computeScrollOffset()) {
-            scaleChild(mCurrentPosition, mCurrentDir);
+            int position = mCurrentPosition;
+            if (mCurrentDir == RIGHT_TO_LEFT){
+                position = mCurrentPosition - 1;
+            }else if (mCurrentDir == LEFT_TO_RIGHT){
+                position = mCurrentPosition + 1;
+            }
+            scaleChild(position, mCurrentDir);
             scrollTo(mScroller.getCurrX(), 0);
         }
     }
 
+    /**
+     * shrink the size of current sliding the child, and scale the next child which
+     * will slide to middle position
+     * @param position current sliding child's position
+     * @param direction the slide direction{@link #RIGHT_TO_LEFT } {@link #LEFT_TO_RIGHT}
+     * */
     private void scaleChild(int position, int direction){
-        mCurrentPosition = position;
+
         mCurrentDir = direction;
-        float r = (float)getScrollX() / MOVE_SIZE;
+        int intervalSize = position;
+        if (direction == LEFT_TO_RIGHT ){
+            intervalSize = position - 1;
+        }
+        float r = (float)(getScrollX()-MOVE_SIZE*intervalSize) / MOVE_SIZE;
+        LogUtils.LogD(TAG, " current position == " + position + "current ratio == " + r);
         float scaleRatio = SCALE_RATIO + (1.0f - SCALE_RATIO) * r;
         float shrinkRatio = 1.0f - (1.0f - SCALE_RATIO)*r;
         View scaleView = null;
         View shrinkView = null;
+        float scale = 0.0f;
+        float shrink = 0.0f;
         if (direction == LEFT_TO_RIGHT){
             if (position > 0){
                 scaleView = getChildAt(position - 1);
                 shrinkView = getChildAt(position);
+                shrink = SCALE_RATIO + (1.0f - SCALE_RATIO) * r;
+                scale = 1.0f - (1.0f - SCALE_RATIO)*r;
             }
         }else if (direction == RIGHT_TO_LEFT){
             if (position < getChildCount() - 1){
                 scaleView = getChildAt(position + 1);
                 shrinkView = getChildAt(position);
-
+                scale = SCALE_RATIO + (1.0f - SCALE_RATIO) * r;
+                shrink = 1.0f - (1.0f - SCALE_RATIO)*r;
             }
         }else {
             throw new IllegalStateException("this is illegal state");
         }
         if (scaleView != null){
-            ViewCompat.setScaleX(scaleView, scaleRatio);
-            ViewCompat.setScaleY(scaleView, scaleRatio);
-            ViewCompat.postInvalidateOnAnimation(scaleView);
+            ViewCompat.setScaleX(scaleView, scale);
+            ViewCompat.setScaleY(scaleView, scale);
+            scaleView.invalidate();
         }
         if (shrinkView != null){
-            ViewCompat.setScaleX(shrinkView, shrinkRatio);
-            ViewCompat.setScaleY(shrinkView, shrinkRatio);
-            ViewCompat.postInvalidateOnAnimation(shrinkView);
+            ViewCompat.setScaleX(shrinkView, shrink);
+            ViewCompat.setScaleY(shrinkView, shrink);
+            shrinkView.invalidate();
         }
     }
 
