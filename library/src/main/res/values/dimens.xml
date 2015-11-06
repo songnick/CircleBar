@@ -1,4 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <dimen name="acc_default_size">100dp</dimen>
+    <dimen name="bars_height">50dp</dimen>
+    <dimen name="bars_width">100dp</dimen>
 </resources>

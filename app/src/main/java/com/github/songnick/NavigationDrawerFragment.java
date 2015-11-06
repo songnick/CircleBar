@@ -49,6 +49,14 @@ public class NavigationDrawerFragment extends Fragment {
                 }
             }
         });
+        view.findViewById(R.id.radio2).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (mListener != null){
+                    mListener.onItemClick(2);
+                }
+            }
+        });
     }
 
     @Override
