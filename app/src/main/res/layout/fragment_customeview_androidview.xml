@@ -3,7 +3,37 @@
     android:orientation="vertical" android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:gravity="center_vertical">
-    <com.github.songnick.androidview.SlidProgressbar
+    <RadioGroup
         android:layout_width="match_parent"
-        android:layout_height="200dp"></com.github.songnick.androidview.SlidProgressbar>
+        android:layout_height="50dp"
+        android:gravity="center"
+        android:orientation="horizontal"
+        android:id="@+id/display_tab">
+        <com.github.songnick.androidview.IndicatorRadioButton
+            android:id="@+id/horizontal_item"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:text="Horizontal"
+            android:gravity="center"
+            android:textSize="15sp"
+            android:button="@null"
+            android:checked="true"
+            android:textColor="@color/custom_tab_color"
+            />
+        <com.github.songnick.androidview.IndicatorRadioButton
+            android:id="@+id/vertical_item"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:text="Vertical"
+            android:textSize="15sp"
+            android:gravity="center"
+            android:button="@null"
+            android:textColor="@color/custom_tab_color"/>
+    </RadioGroup>
+    <com.github.songnick.androidview.NoSlideViewPager
+        android:id="@+id/orientation_display"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"></com.github.songnick.androidview.NoSlideViewPager>
 </LinearLayout>

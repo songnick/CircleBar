@@ -8,4 +8,16 @@
         <attr name="duration" format="integer"></attr>
         <attr name="timeTextSize" format="dimension"></attr>
     </declare-styleable>
+    <declare-styleable name="SlidProgressbar">
+        <attr name="orientation" format="enum">
+            <enum name="horizontal" value="0"></enum>
+            <enum name="vertical" value="1"></enum>
+        </attr>
+        <attr name="progressWidth" format="dimension"></attr>
+        <attr name="progressHeight" format="dimension"></attr>
+        <attr name="thumbRadius" format="dimension"></attr>
+        <attr name="thumbTextSize" format="dimension"></attr>
+        <attr name="thumbText" format="string"></attr>
+    </declare-styleable>
+
 </resources>

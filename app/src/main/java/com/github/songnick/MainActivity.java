@@ -12,7 +12,7 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.FrameLayout;
 
-import com.github.songnick.fragment.AndView4ConstumeViewFragment;
+import com.github.songnick.fragment.AndView4CustomViewFragment;
 import com.github.songnick.fragment.DefineViewFragment;
 import com.github.songnick.fragment.DefineViewGroupFragment;
 
@@ -25,7 +25,7 @@ public class MainActivity extends AppCompatActivity implements NavigationDrawerF
     private DefineViewGroupFragment mDefineViewGroupFragment = null;
     private FrameLayout mContainer = null;
     private Fragment mCurrentFragment = null;
-    private AndView4ConstumeViewFragment mAndCustomView = null;
+    private AndView4CustomViewFragment mAndCustomView = null;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -74,7 +74,7 @@ public class MainActivity extends AppCompatActivity implements NavigationDrawerF
                 break;
             case 2:
                 if (mAndCustomView == null){
-                    mAndCustomView = AndView4ConstumeViewFragment.newInstance();
+                    mAndCustomView = AndView4CustomViewFragment.newInstance();
                 }
 
                 if (!mCurrentFragment.equals(mAndCustomView)){
