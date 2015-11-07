@@ -3,7 +3,9 @@ package com.github.songnick.androidview;
 import android.content.Context;
 import android.content.res.TypedArray;
 import android.graphics.Color;
+import android.graphics.Rect;
 import android.graphics.drawable.GradientDrawable;
+import android.support.v4.view.MotionEventCompat;
 import android.util.AttributeSet;
 import android.view.Gravity;
 import android.view.MotionEvent;
@@ -28,6 +30,9 @@ public class SlidProgressbar extends RelativeLayout {
     private static final int MAX_DURATION = 100;
     public static final int HORIZONTAL = 0;
     public static final int VERTICAL = 1;
+
+    private static final int INVALID_POINTER_ID = -1;
+
     /**
      * the progress bar
      * */
@@ -72,6 +77,10 @@ public class SlidProgressbar extends RelativeLayout {
     /** this parameters is for test */
     private float mLastDistance = 0;
 
+    /** last motion touch x value **/
+    private float mLastMotionX = 0.0f;
+    private int mActivePointerId = INVALID_POINTER_ID;
+
     /*** current duration */
     private int mCurrentDuration = 0;
 
@@ -100,7 +109,7 @@ public class SlidProgressbar extends RelativeLayout {
         super.onFinishInflate();
         if (mOrientation == HORIZONTAL){
             initHorizontal(getContext());
-            initHorizontalViewTouchEvent();
+//            initHorizontalViewTouchEvent();
         }else if (mOrientation == VERTICAL){
             initVerticalView(getContext());
             initVerticalViewTouchEvent();
@@ -120,6 +129,7 @@ public class SlidProgressbar extends RelativeLayout {
 
         mFirstBarLp = new RelativeLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, mProgressHeight);
         mFirstBarLp.addRule(CENTER_IN_PARENT);
+        mFirstBar.setClickable(false);
         addView(mFirstBar, mFirstBarLp);
 
         mThumb = new TextView(context);
@@ -147,7 +157,8 @@ public class SlidProgressbar extends RelativeLayout {
         mSecondBarLp.addRule(CENTER_VERTICAL);
 //        mSecondBarLp.addRule(LEFT_OF, THUMB_ID);
         mSecondBarLp.addRule(ALIGN_PARENT_LEFT);
-        addView(mSecondBar, 1,mSecondBarLp);
+        addView(mSecondBar, 1, mSecondBarLp);
+        mSecondBar.setClickable(false);
     }
 
     private void initVerticalView(Context context){
@@ -180,14 +191,14 @@ public class SlidProgressbar extends RelativeLayout {
         mSecondBar = new LinearLayout(context);
         GradientDrawable secondDrawable = new GradientDrawable();
         secondDrawable.setColor(Color.parseColor("#99CC00"));
-        secondDrawable.setCornerRadius((float)mProgressWidth/2);
+        secondDrawable.setCornerRadius((float) mProgressWidth / 2);
         mSecondBar.setBackgroundDrawable(secondDrawable);
         mSecondBarLp = new RelativeLayout.LayoutParams(mProgressWidth, mThumbRadius);
 //        mSecondBarLp.leftMargin = 0;
         mSecondBarLp.addRule(CENTER_HORIZONTAL);
 //        mSecondBarLp.addRule(LEFT_OF, THUMB_ID);
         mSecondBarLp.addRule(ALIGN_PARENT_TOP);
-        addView(mSecondBar, 1,mSecondBarLp);
+        addView(mSecondBar, 1, mSecondBarLp);
     }
 
     private void initHorizontalViewTouchEvent(){
@@ -197,15 +208,21 @@ public class SlidProgressbar extends RelativeLayout {
                 switch (event.getAction() & MotionEvent.ACTION_MASK) {
                     case MotionEvent.ACTION_DOWN:
                         mHitDowX = event.getX();
+                        mLastMotionX = event.getX();
                         mThumbOriginalLeft = mThumbLp.leftMargin;
                         mSecondBarOriWidth = mSecondBarLp.width;
+                        mActivePointerId = MotionEventCompat.getPointerId(event, 0);
                         break;
                     case MotionEvent.ACTION_MOVE:
-                        //right thumb started position is right
-                        //so the user slit this thumb will generate negative count
-                        float distance = (event.getX() - mHitDowX);
-                        mThumbLp.leftMargin = (int) (mThumbOriginalLeft + distance);
-                        mSecondBarLp.width = (int) (mSecondBarOriWidth + distance);
+                        // Scroll to follow the motion event
+                        final int activePointerIndex = MotionEventCompat.findPointerIndex(
+                                event, mActivePointerId);
+                        final float x = MotionEventCompat.getX(event, activePointerIndex);
+                        float distance = (event.getX() - mLastMotionX);
+                        mLastMotionX = x;
+                        mThumbLp.leftMargin = (int) (mThumbLp.leftMargin + distance);
+                        mSecondBarLp.width = (int) (mSecondBarLp.width + distance);
+                        LogUtils.LogD(TAG, " horizontal current distance == " + distance);
                         //confirm this thumb is show, no anywhere is hide
                         if (mThumbLp.leftMargin <= 0) {
                             mThumbLp.leftMargin = 0;
@@ -367,6 +384,63 @@ public class SlidProgressbar extends RelativeLayout {
 
             return getMeasuredHeight() - mThumbRadius*2;
         }
+    }
+
+    @Override
+    public boolean onTouchEvent(MotionEvent event) {
+        int action = MotionEventCompat.getActionMasked(event);
+        boolean isDraged = false;
+        Rect rect = new Rect();
+        mThumb.getHitRect(rect);
+        LogUtils.LogD(TAG, "current rect == " + rect + " down " + event.getX() + " douwn y = " + event.getY());
+        switch (action){
+            case MotionEvent.ACTION_DOWN:
+                float x = event.getX();
+                float y = event.getY();
+                boolean contain = rect.contains((int)x, (int)y);
+                if (contain){
+                    mLastMotionX = event.getX();
+                    isDraged = true;
+                }
+                break;
+            case MotionEvent.ACTION_MOVE:
+                dragThumb(event.getX());
+                break;
+
+            case MotionEvent.ACTION_UP:
+
+                break;
+        }
+
+
+        return isDraged;
+    }
+
+    private void dragThumb(float x){
+// Scroll to follow the motion event
+//        final int activePointerIndex = MotionEventCompat.findPointerIndex(
+//                event, mActivePointerId);
+//        final float x = MotionEventCompat.getX(event, activePointerIndex);
+        float distance = (x - mLastMotionX);
+        mLastMotionX = x;
+        mThumbLp.leftMargin = (int) (mThumbLp.leftMargin + distance);
+        mSecondBarLp.width = (int) (mSecondBarLp.width + distance);
+        LogUtils.LogD(TAG, " horizontal current distance == " + distance);
+        //confirm this thumb is show, no anywhere is hide
+        if (mThumbLp.leftMargin <= 0) {
+            mThumbLp.leftMargin = 0;
+            mSecondBarLp.width = mThumbRadius;
+        } else if (mThumbLp.leftMargin >= getMeasuredWidth() - mThumbRadius * 2) {
+            mThumbLp.leftMargin = getMeasuredWidth() - mThumbRadius * 2;
+            mSecondBarLp.width = getMeasuredWidth() - mThumbRadius;
+        }
+//                        if (mMDThumbRl.leftMargin > getMeasuredWidth() - mRTRl.rightMargin) {
+//                            Log.d(TAG, " current middle thumb left margin = " + mMDThumbRl.leftMargin);
+//                            mMDThumbRl.leftMargin = getMeasuredWidth() - mRTRl.rightMargin;
+//                        }
+//                        Log.d(TAG, " current middle thumb left margin = " + mMDThumbRl.leftMargin + " sss = " + (getMeasuredWidth() - getStartEndMargin()));
+        updateViewLayout(mThumb, mThumbLp);
+        updateViewLayout(mSecondBar, mSecondBarLp);
     }
 
     /**

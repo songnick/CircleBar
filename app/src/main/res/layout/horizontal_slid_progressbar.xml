@@ -3,15 +3,16 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:orientation="vertical"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    android:clickable="false">
     <com.github.songnick.androidview.SlidProgressbar
         android:id="@+id/horizontal_slid_progressbar"
         android:layout_width="match_parent"
         android:layout_height="200dp"
-        app:progressHeight="20dp"
+        app:progressHeight="10dp"
         app:thumbRadius="15dp"
         android:layout_marginRight="10dp"
         android:layout_marginLeft="10dp"
-        app:thumbTextSize="10sp"
+        app:thumbTextSize="8sp"
         app:orientation="horizontal"></com.github.songnick.androidview.SlidProgressbar>
 </LinearLayout>
