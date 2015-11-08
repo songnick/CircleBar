@@ -143,7 +143,7 @@ public class SlidProgressbar extends RelativeLayout {
         mThumb.setGravity(Gravity.CENTER);
         if (mThumbTextSize != 0)
         mThumb.setTextSize(mThumbTextSize);
-        mThumb.setText("10%");
+//        mThumb.setText("10%");
 
         mSecondBar = new LinearLayout(context);
 
@@ -186,7 +186,7 @@ public class SlidProgressbar extends RelativeLayout {
         if (mThumbTextSize != 0){
             mThumb.setTextSize(mThumbTextSize);
         }
-        mThumb.setText("10%");
+//        mThumb.setText("10%");
 
         mSecondBar = new LinearLayout(context);
         GradientDrawable secondDrawable = new GradientDrawable();

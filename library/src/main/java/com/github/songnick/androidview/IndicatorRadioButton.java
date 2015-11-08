@@ -41,6 +41,7 @@ public class IndicatorRadioButton extends RadioButton {
 	protected void onDraw(Canvas canvas) {
 		super.onDraw(canvas);
 		int height = getMeasuredHeight();
+		//the indicator's height
 		int indicatorHeight = getResources().getDimensionPixelSize(R.dimen.radio_button_indicator_height);
 		if (isChecked()){
 			mPaint.setColor(getCurrentTextColor());

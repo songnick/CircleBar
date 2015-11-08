@@ -81,7 +81,7 @@
                     android:paddingEnd="0dp"
                     android:paddingLeft="17dp"
                     android:paddingRight="0dp"
-                    android:text="Define UI by View"
+                    android:text="CustomView for View"
                     android:textSize="17sp" />
 
 
@@ -96,7 +96,7 @@
                 android:drawablePadding="15dp"
                 android:paddingLeft="17dp"
                 android:paddingRight="0dp"
-                android:text="Define UI by ViewGroup"
+                android:text="CustomView for ViewGroup"
                 android:textSize="17sp" />
 
             <RadioButton
@@ -110,7 +110,7 @@
                 android:paddingLeft="17dp"
                 android:paddingRight="0dp"
 
-                android:text="Define UI by ReLiFr"
+                android:text="CustomView for AndroidView"
                 android:textSize="17sp" />
 
         </LinearLayout>
