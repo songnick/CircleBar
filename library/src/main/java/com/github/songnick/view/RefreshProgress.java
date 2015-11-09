@@ -1,6 +1,7 @@
 package com.github.songnick.view;
 
 import android.content.Context;
+import android.content.res.TypedArray;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Matrix;
@@ -11,25 +12,26 @@ import android.graphics.SweepGradient;
 import android.os.Handler;
 import android.os.Message;
 import android.util.AttributeSet;
-import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
-import android.view.ViewGroup;
 import android.view.animation.Animation;
 import android.view.animation.LinearInterpolator;
 
 import com.github.songnick.LinearAnimation;
+import com.nick.library.R;
 
 /**
  * Created by qfsong on 15/9/8.
  */
-public class RefreshProgress extends ViewGroup {
+public class RefreshProgress extends View{
 
     private static final String TAG = "RefreshProgress";
     private static final int ROTATE_MSG = 0x033;
     private static final int REFRESH_MSG = 0x044;
+    private static final int SEEK_MSG = 0x055;
 
     private boolean isDrawAccProgress = false;
+    private boolean mSeekAble = false;
 
     private Handler mHandler = new Handler(){
         @Override
@@ -44,6 +46,10 @@ public class RefreshProgress extends ViewGroup {
                     stopRotate();
                     startRotate(1 * 1000, true);
                     mHandler.sendEmptyMessageDelayed(ROTATE_MSG, 3000);
+                    break;
+                case SEEK_MSG:
+                    clearAnimation();
+                    startRotate(10 * 1000, false);
                     break;
             }
         }
@@ -60,28 +66,24 @@ public class RefreshProgress extends ViewGroup {
 
     public RefreshProgress(Context context, AttributeSet attrs, int defStyleAttr) {
         super(context, attrs, defStyleAttr);
-        setWillNotDraw(false);
+        TypedArray a = context.obtainStyledAttributes(attrs, R.styleable.RefreshProgress, 0, 0);
+
+        mSeekAble = a.getBoolean(R.styleable.RefreshProgress_seekAble, false);
+
+        a.recycle();
     }
 
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
         super.onMeasure(widthMeasureSpec, heightMeasureSpec);
-        int width = MeasureSpec.getSize(widthMeasureSpec);
+        int width = View.MeasureSpec.getSize(widthMeasureSpec);
         int height = MeasureSpec.getSize(heightMeasureSpec);
         int widthMode = MeasureSpec.getMode(widthMeasureSpec);
         int heightMode = MeasureSpec.getMode(heightMeasureSpec);
 
         int defaultWidth = 0;
         int defaultHeight = 0;
-        int finalWidthMeasureSpec = 0;
-        int finalHeightMeasureSpec = 0;
-        int childCount = getChildCount();
-        for (int i = 0; i < childCount; i++){
-            View child = getChildAt(i);
-            measureChild(child, widthMeasureSpec, heightMeasureSpec);
-//            defaultWidth = child.getMeasuredWidth();
-//            defaultHeight = child.getMeasuredHeight();
-        }
+
         int paddingLeft = getPaddingLeft();
         int paddingRight = getPaddingRight();
         defaultWidth = getPaddingLeft() + getPaddingRight() + defaultWidth;
@@ -89,14 +91,11 @@ public class RefreshProgress extends ViewGroup {
         switch (widthMode){
             case  MeasureSpec.EXACTLY:
                 //the size is confirmed - match parent or dd
-                Log.d("", " onLayout is size == mode exactly");
                 break;
             case MeasureSpec.AT_MOST:
                 //wrap_content
-                Log.d("", " onLayout is size == mode AT_MOST");
                 break;
             case MeasureSpec.UNSPECIFIED:
-                Log.d("", " onLayout is size == mode UNSPECIFIED");
                 break;
 
         }
@@ -112,35 +111,40 @@ public class RefreshProgress extends ViewGroup {
                 break;
 
         }
-        Log.d("", " onLayout is size == mode UNSPECIFIED default height = " + defaultHeight);
         setMeasuredDimension(width, height);
         rectF.set(17, 17, width - 17, height - 17);
     }
 
     @Override
-    protected void onLayout(boolean changed, int l, int t, int r, int b) {
-        Log.d("", " onLayout is size == " + "left == " + l + " top " + t + "right " + r + " bottom = " + b);
-        int childCount = getChildCount();
-        if (childCount >= 2){
-            throw new IllegalStateException("this layout must have one child ");
-        }
-        for (int i = 0; i < childCount; i++){
-            View child = getChildAt(i);
-
-            child.layout(0, 0, child.getMeasuredWidth(), child.getMeasuredHeight());
-            Log.d("", " onLayout is size == height" + child.getMeasuredHeight());
-        }
-    }
-
-    @Override
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
-        if (isDrawAccProgress){
-            drawAccProgressbar(startAngle, canvas);
+        if (mSeekAble){
+            drawSeekbar(canvas, startAngle);
         }else {
-            drawSlowIndicator(startAngle, canvas);
+            if (isDrawAccProgress){
+                drawAccProgressbar(startAngle, canvas);
+            }else {
+                drawSlowIndicator(startAngle, canvas);
+            }
         }
 
+
+    }
+
+    private void drawSeekbar(Canvas canvas, float startAngle){
+        Paint circlePaint = new Paint();
+        circlePaint.setAntiAlias(true);
+        circlePaint.setColor(Color.parseColor("#FF4444"));
+        circlePaint.setStrokeWidth(7);
+        circlePaint.setStyle(Paint.Style.STROKE);
+        Path path = new Path();
+        path.addArc(rectF, 0, startAngle);
+        canvas.drawPath(path, circlePaint);
+        int restoreCount = canvas.save();
+        canvas.translate(rectF.centerX(), rectF.centerY());
+        circlePaint.setStyle(Paint.Style.FILL);
+        canvas.drawPath(getBallPath(startAngle), circlePaint);
+        canvas.restoreToCount(restoreCount);
     }
 
     private void drawSlowIndicator(float startAngle, Canvas canvas){
@@ -252,7 +256,11 @@ public class RefreshProgress extends ViewGroup {
     @Override
     protected void onAttachedToWindow() {
         super.onAttachedToWindow();
-        mHandler.sendEmptyMessageDelayed(ROTATE_MSG, 500);
+        if (mSeekAble){
+
+            mHandler.sendEmptyMessageDelayed(SEEK_MSG, 1000);
+        }else
+            mHandler.sendEmptyMessageDelayed(ROTATE_MSG, 500);
     }
 
     @Override

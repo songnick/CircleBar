@@ -1,6 +1,7 @@
 package com.github.songnick.viewgroup;
 
 import android.content.Context;
+import android.content.res.TypedArray;
 import android.support.v4.view.MotionEventCompat;
 import android.support.v4.view.ViewCompat;
 import android.support.v4.widget.ScrollerCompat;
@@ -12,6 +13,7 @@ import android.view.ViewGroup;
 import android.view.animation.Interpolator;
 
 import com.github.songnick.utils.LogUtils;
+import com.nick.library.R;
 
 /**
  * Created by qfsong on 15/10/26.
@@ -21,7 +23,6 @@ public class SlideViewPager extends ViewGroup {
     private static final int MARGIN_LEFT_RIGHT = 150;
     private static final int MARGIN_TOP_BOTTOM = 400;
     private static final float SCALE_RATIO = 0.8f;
-    private static final int MOVE_SIZE = 1080 - MARGIN_LEFT_RIGHT * 2;
 
     /**
      * view slide direction left to right
@@ -86,6 +87,11 @@ public class SlideViewPager extends ViewGroup {
 
     private ScrollerCompat mScroller;
 
+    private float mMarginLeftRight = 0.0f;
+    private float mMarginTopBottom = 0.0f;
+
+    private int mSwitchSize = 0;
+
     public SlideViewPager(Context context) {
 
         this(context, null);
@@ -97,6 +103,10 @@ public class SlideViewPager extends ViewGroup {
 
     public SlideViewPager(Context context, AttributeSet attrs, int defStyleAttr) {
         super(context, attrs, defStyleAttr);
+        TypedArray a = context.obtainStyledAttributes(attrs, R.styleable.ScaleViewPager, 0, 0);
+        mMarginLeftRight = a.getDimension(R.styleable.ScaleViewPager_marginLeftRight, 0);
+        mMarginTopBottom = a.getDimension(R.styleable.ScaleViewPager_marginTopBottom, 0);
+        a.recycle();
         init(context);
     }
 
@@ -205,30 +215,28 @@ public class SlideViewPager extends ViewGroup {
             smoothScrollToDes();
         }
     }
+
+    private boolean isRelease = false;
     /**
      * when user touch up, invoke this method,
      * and scroll to confirmed view smoothly
      * */
     private void smoothScrollToDes(){
-//        //user release the view, so current direction is invalid
-//        if (mCurrentDir == LEFT_TO_RIGHT){
-//            mCurrentDir = RIGHT_TO_LEFT;
-//        }else {
-//            mCurrentDir = LEFT_TO_RIGHT;
-//        }
+        isRelease  = true;
         int scrollX = getScrollX();
-        int position = (scrollX + 1080/2)/1080;
-        int dx = position * (1080 - MARGIN_LEFT_RIGHT * 2) - scrollX;
+        int position = (scrollX + getMeasuredWidth() / 2) / getMeasuredWidth();
+        int dx = position * (getMeasuredHeight() - (int)mMarginLeftRight * 2) - scrollX;
         mScroller.startScroll(getScrollX(), 0, dx, 0, Math.abs(dx) * 2);
         invalidate();
     }
 
     private void smoothScrollToView(int position){
+        isRelease = false;
         mCurrentPosition = position;
         if (mCurrentPosition > getChildCount()-1){
             mCurrentPosition = getChildCount() - 1;
         }
-        int dx = position * (1080 - MARGIN_LEFT_RIGHT * 2) - getScrollX();
+        int dx = position * (getMeasuredWidth() - (int)mMarginLeftRight * 2) - getScrollX();
         mScroller.startScroll(getScrollX(), 0, dx, 0,Math.abs(dx) * 2);
         invalidate();
     }
@@ -237,13 +245,19 @@ public class SlideViewPager extends ViewGroup {
     public void computeScroll() {
 //        super.computeScroll();
         if (mScroller.computeScrollOffset()) {
-            int position = mCurrentPosition;
-            if (mCurrentDir == RIGHT_TO_LEFT){
-                position = mCurrentPosition - 1;
-            }else if (mCurrentDir == LEFT_TO_RIGHT){
-                position = mCurrentPosition + 1;
+            if (isRelease){
+                restoreView(mCurrentPosition, mCurrentDir);
+            }else {
+                int position = mCurrentPosition;
+                if (mCurrentDir == RIGHT_TO_LEFT){
+                    LogUtils.LogD(TAG, " current direction == right to left" );
+                    position = mCurrentPosition - 1;
+                }else if (mCurrentDir == LEFT_TO_RIGHT){
+                    LogUtils.LogD(TAG, " current direction == left to right " );
+                    position = mCurrentPosition + 1;
+                }
+                scaleChild(position, mCurrentDir);
             }
-            scaleChild(position, mCurrentDir);
             scrollTo(mScroller.getCurrX(), 0);
         }
     }
@@ -261,7 +275,7 @@ public class SlideViewPager extends ViewGroup {
         if (direction == LEFT_TO_RIGHT ){
             intervalSize = position - 1;
         }
-        float r = (float)(getScrollX()-MOVE_SIZE*intervalSize) / MOVE_SIZE;
+        float r = (float)(getScrollX()- mSwitchSize *intervalSize) / mSwitchSize;
         LogUtils.LogD(TAG, " current position == " + position + "current ratio == " + r);
         float scaleRatio = SCALE_RATIO + (1.0f - SCALE_RATIO) * r;
         float shrinkRatio = 1.0f - (1.0f - SCALE_RATIO)*r;
@@ -298,11 +312,49 @@ public class SlideViewPager extends ViewGroup {
         }
     }
 
+    private void restoreView(int position, int direction){
+
+        float r = (float)(getScrollX()- mSwitchSize * position) / mSwitchSize;
+        View scaleView = null;
+        View shrinkView = null;
+        float scale = 0.0f;
+        float shrink = 0.0f;
+        if (direction == RIGHT_TO_LEFT ){
+            if (position < getChildCount() - 1){
+                scaleView = getChildAt(position);
+                shrinkView = getChildAt(position + 1);
+                scale = 1.0f - (1.0f - SCALE_RATIO) * r;
+                shrink = SCALE_RATIO + (1.0f - SCALE_RATIO) * r;
+            }
+        }else if (direction == LEFT_TO_RIGHT){
+            if (position > 0){
+                scaleView = getChildAt(position);
+                shrinkView = getChildAt(position - 1);
+                scale = SCALE_RATIO + (1.0f - SCALE_RATIO) * r;
+                shrink = 1.0f - (1.0f - SCALE_RATIO) * r;
+            }
+        }else {
+            throw  new IllegalStateException(" unexception direction is set ");
+        }
+        LogUtils.LogD(TAG, " release position " + position + " scale ratio = " + scale + " shrink ratio = " + shrink + " direction == " + direction);
+        if (scaleView != null){
+            ViewCompat.setScaleX(scaleView, scale);
+            ViewCompat.setScaleY(scaleView, scale);
+            scaleView.invalidate();
+        }
+        if (shrinkView != null){
+            ViewCompat.setScaleX(shrinkView, shrink);
+            ViewCompat.setScaleY(shrinkView, shrink);
+            shrinkView.invalidate();
+        }
+
+    }
+
     @Override
     protected void onLayout(boolean changed, int l, int t, int r, int b) {
         int childCount = getChildCount();
-        int originLeft = MARGIN_LEFT_RIGHT;
-        int originTop = MARGIN_TOP_BOTTOM;
+        int originLeft = (int)mMarginLeftRight;
+        int originTop = (int)mMarginTopBottom;
 
         for (int i = 0; i < childCount; i++) {
             View child = getChildAt(i);
@@ -320,15 +372,26 @@ public class SlideViewPager extends ViewGroup {
 
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-        super.onMeasure(widthMeasureSpec, heightMeasureSpec);
+        // For simple implementation, our internal size is always 0.
+        // We depend on the container to specify the layout size of
+        // our view.  We can't really know what it is since we will be
+        // adding and removing different arbitrary views and do not
+        // want the layout to change as this happens.
+        setMeasuredDimension(getDefaultSize(0, widthMeasureSpec),
+                getDefaultSize(0, heightMeasureSpec));
+        int measuredWidth = getMeasuredWidth();
+        int measuredHeight = getMeasuredHeight();
+
         int childCount = getChildCount();
-        int width = 1080 - MARGIN_LEFT_RIGHT * 2;
-        int height = 1920 - MARGIN_TOP_BOTTOM * 2;
+        int width = measuredWidth - (int)(mMarginLeftRight * 2);
+        int height = measuredHeight - (int)mMarginTopBottom * 2;
         int childWidthMeasureSpec = MeasureSpec.makeMeasureSpec(width, MeasureSpec.EXACTLY);
         int childHeightMeasureSpec = MeasureSpec.makeMeasureSpec(height, MeasureSpec.EXACTLY);
         for (int i = 0; i < childCount; i++) {
             getChildAt(i).measure(childWidthMeasureSpec, childHeightMeasureSpec);
         }
+
+        mSwitchSize = measuredWidth - (int)mMarginLeftRight * 2;
     }
 
 }

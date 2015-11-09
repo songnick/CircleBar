@@ -49,6 +49,7 @@ public class MainActivity extends AppCompatActivity implements NavigationDrawerF
         if (mUI4ViewFragment == null){
             mUI4ViewFragment = DefineViewFragment.newInstance();
             switchFragment(mUI4ViewFragment);
+            mUI4ViewFragment = null;
         }
     }
 
@@ -88,7 +89,7 @@ public class MainActivity extends AppCompatActivity implements NavigationDrawerF
         mCurrentFragment = fragment;
         FragmentTransaction ft = getSupportFragmentManager().beginTransaction();
         ft.replace(R.id.container_fragment, fragment);
-        ft.commit();
+        ft.commitAllowingStateLoss();
     }
 
     @Override
