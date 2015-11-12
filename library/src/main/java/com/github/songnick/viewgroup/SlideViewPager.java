@@ -9,6 +9,7 @@ import android.util.AttributeSet;
 import android.view.MotionEvent;
 import android.view.VelocityTracker;
 import android.view.View;
+import android.view.ViewConfiguration;
 import android.view.ViewGroup;
 import android.view.animation.Interpolator;
 
@@ -89,6 +90,7 @@ public class SlideViewPager extends ViewGroup {
 
     private float mMarginLeftRight = 0.0f;
     private float mMarginTopBottom = 0.0f;
+    private int mTouchEge = 0;
 
     private int mSwitchSize = 0;
 
@@ -112,6 +114,8 @@ public class SlideViewPager extends ViewGroup {
 
     private void init(Context context){
         mScroller = ScrollerCompat.create(context, sInterpolator);
+        ViewConfiguration viewConfiguration = ViewConfiguration.get(context);
+        mTouchEge = viewConfiguration.getScaledTouchSlop();
     }
 
     /**
@@ -156,7 +160,9 @@ public class SlideViewPager extends ViewGroup {
         switch (event.getAction() & MotionEvent.ACTION_MASK){
             case MotionEvent.ACTION_DOWN:
                 mDownX = event.getRawX();
-
+                if (mScroller != null && !mScroller.isFinished()){
+                    mScroller.abortAnimation();
+                }
                 break;
             case MotionEvent.ACTION_MOVE:
                 //calculate moving distance
@@ -165,10 +171,10 @@ public class SlideViewPager extends ViewGroup {
                 LogUtils.LogD(TAG, " current distance == " + distance);
                 scrollBy((int) distance, 0);
                 if (distance < 0){
-                    scaleChild(mCurrentPosition, LEFT_TO_RIGHT);
+                    slidScale(mCurrentPosition, LEFT_TO_RIGHT);
                 }else {
                     LogUtils.LogD(TAG, " current direction is right to left and current child position =  " + mCurrentPosition);
-                    scaleChild(mCurrentPosition, RIGHT_TO_LEFT);
+                    slidScale(mCurrentPosition, RIGHT_TO_LEFT);
                 }
 
                 break;
@@ -224,14 +230,19 @@ public class SlideViewPager extends ViewGroup {
     private void smoothScrollToDes(){
         isRelease  = true;
         int scrollX = getScrollX();
-        int position = (scrollX + getMeasuredWidth() / 2) / getMeasuredWidth();
-        int dx = position * (getMeasuredHeight() - (int)mMarginLeftRight * 2) - scrollX;
-        mScroller.startScroll(getScrollX(), 0, dx, 0, Math.abs(dx) * 2);
+        //confirm the position to scroll
+        int position = (scrollX + mSwitchSize / 2) / mSwitchSize;
+        LogUtils.LogD(TAG, " smooth scroll to des position == before ="  + mCurrentPosition
+                + " scroll X = " + scrollX + " switch size == " + mSwitchSize + " position == " + position);
+        mCurrentPosition = position;
+
+        int dx = position * (getMeasuredWidth() - (int)mMarginLeftRight * 2) - scrollX;
+        LogUtils.LogD(TAG, " smooth scroll to des position == " + position + " dx = " + dx + " scroll x == " + scrollX);
+        mScroller.startScroll(getScrollX(), 0, dx, 0, Math.abs(dx));
         invalidate();
     }
 
     private void smoothScrollToView(int position){
-        isRelease = false;
         mCurrentPosition = position;
         if (mCurrentPosition > getChildCount()-1){
             mCurrentPosition = getChildCount() - 1;
@@ -245,9 +256,9 @@ public class SlideViewPager extends ViewGroup {
     public void computeScroll() {
 //        super.computeScroll();
         if (mScroller.computeScrollOffset()) {
-            if (isRelease){
-                restoreView(mCurrentPosition, mCurrentDir);
-            }else {
+//            if (isRelease){
+//                restoreView(mCurrentPosition, mCurrentDir);
+//            }else {
                 int position = mCurrentPosition;
                 if (mCurrentDir == RIGHT_TO_LEFT){
                     LogUtils.LogD(TAG, " current direction == right to left" );
@@ -256,9 +267,69 @@ public class SlideViewPager extends ViewGroup {
                     LogUtils.LogD(TAG, " current direction == left to right " );
                     position = mCurrentPosition + 1;
                 }
-                scaleChild(position, mCurrentDir);
-            }
+                releaseScaleChild(position, mCurrentDir);
+//            }
             scrollTo(mScroller.getCurrX(), 0);
+        }
+    }
+
+    private void slidScale(int position, int direction){
+
+        int distance = getScrollX() - position * mSwitchSize;
+        mCurrentDir = direction;
+        View scaleView = null;
+        View shrinkView = null;
+        float scaleRatio = 0.0f;
+        float shrinkRatio = 0.0f;
+        //if distance is bigger than zero,
+        //current drag action is between current page and next page
+        //otherwise is between front page and current page
+        if (distance > 0){
+            int moveSize = getScrollX() - position * mSwitchSize;
+            float ratio = (float)moveSize / mSwitchSize;//this value is from 0 to 1;
+            if (direction == LEFT_TO_RIGHT){//value may be from X to 0
+                if (position >= 0){
+                    scaleView = getChildAt(position);
+                    shrinkView = getChildAt(position + 1);
+                    float currentScale = (float)scaleView.getTag();
+                    float currentShrink = (float)scaleView.getTag();
+                    shrinkRatio = SCALE_RATIO + (1.0f - SCALE_RATIO ) * ratio;
+                    scaleRatio = 1.0f - (1.0f - SCALE_RATIO ) * ratio;
+                    LogUtils.LogD(TAG, " current scale ratio = " + scaleRatio +  " shrink ratio = " + shrinkRatio + " ratio = " + ratio);
+                }
+            }else if (direction == RIGHT_TO_LEFT){
+                if (position < getChildCount() - 1){
+                    scaleView = getChildAt(position + 1);
+                    shrinkView = getChildAt(position);
+                    scaleRatio = SCALE_RATIO + (1.0f - SCALE_RATIO ) * ratio;;
+                    shrinkRatio = 1.0f - (1.0f - SCALE_RATIO ) * ratio;
+                }
+            }
+        }else if (distance < 0){
+            float moveSize = position*mSwitchSize - getScrollX();
+            float ratio = moveSize / mSwitchSize;
+
+            if (direction == LEFT_TO_RIGHT){
+                scaleView = getChildAt(position - 1);
+                shrinkView = getChildAt(position);
+                scaleRatio = SCALE_RATIO + (1.0f - SCALE_RATIO ) * ratio;
+                shrinkRatio = 1.0f - (1.0f - SCALE_RATIO ) * ratio;
+            }else if (direction == RIGHT_TO_LEFT){
+                scaleView = getChildAt(position);
+                shrinkView = getChildAt(position - 1);
+                shrinkRatio = SCALE_RATIO + (1.0f - SCALE_RATIO ) * ratio;
+                scaleRatio = 1.0f - (1.0f - SCALE_RATIO ) * ratio;
+            }
+        }
+        if (scaleView != null){
+            ViewCompat.setScaleX(scaleView, scaleRatio);
+            ViewCompat.setScaleY(scaleView, scaleRatio);
+            scaleView.invalidate();
+        }
+        if (shrinkView != null){
+            ViewCompat.setScaleX(shrinkView, shrinkRatio);
+            ViewCompat.setScaleY(shrinkView, shrinkRatio);
+            shrinkView.invalidate();
         }
     }
 
@@ -268,10 +339,14 @@ public class SlideViewPager extends ViewGroup {
      * @param position current sliding child's position
      * @param direction the slide direction{@link #RIGHT_TO_LEFT } {@link #LEFT_TO_RIGHT}
      * */
-    private void scaleChild(int position, int direction){
+    private void releaseScaleChild(int position, int direction){
 
         mCurrentDir = direction;
         int intervalSize = position;
+        int intervalWidth = position * mSwitchSize;
+        LogUtils.LogD(TAG, " scale child scroll x = " + getScrollX()
+                + " current position = " + position + " intervalSize = " + intervalWidth);
+
         if (direction == LEFT_TO_RIGHT ){
             intervalSize = position - 1;
         }
@@ -289,14 +364,27 @@ public class SlideViewPager extends ViewGroup {
                 shrinkView = getChildAt(position);
                 shrink = SCALE_RATIO + (1.0f - SCALE_RATIO) * r;
                 scale = 1.0f - (1.0f - SCALE_RATIO)*r;
-            }
-        }else if (direction == RIGHT_TO_LEFT){
-            if (position < getChildCount() - 1){
-                scaleView = getChildAt(position + 1);
-                shrinkView = getChildAt(position);
+            }else {
+                scaleView = getChildAt(position);
+                shrinkView = getChildAt(position + 1);
                 scale = SCALE_RATIO + (1.0f - SCALE_RATIO) * r;
                 shrink = 1.0f - (1.0f - SCALE_RATIO)*r;
             }
+        }else if (direction == RIGHT_TO_LEFT){
+            if (getScrollX() - mSwitchSize * position > 0){
+                if (position < getChildCount() - 1){
+                    scaleView = getChildAt(position + 1);
+                    shrinkView = getChildAt(position);
+                    scale = SCALE_RATIO + (1.0f - SCALE_RATIO) * r;
+                    shrink = 1.0f - (1.0f - SCALE_RATIO)*r;
+                }
+            }else {
+                scaleView = getChildAt(position);
+                shrinkView = getChildAt(position - 1);
+                scale = SCALE_RATIO + (1.0f - SCALE_RATIO) * r;
+                shrink = 1.0f - (1.0f - SCALE_RATIO)*r;
+            }
+
         }else {
             throw new IllegalStateException("this is illegal state");
         }
@@ -365,6 +453,9 @@ public class SlideViewPager extends ViewGroup {
             if (i != 0){
                 child.setScaleX(SCALE_RATIO);
                 child.setScaleY(SCALE_RATIO);
+                child.setTag(SCALE_RATIO);
+            }else {
+                child.setTag(1.0f);
             }
         }
 
