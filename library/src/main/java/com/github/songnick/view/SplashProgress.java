@@ -18,7 +18,7 @@ import com.github.songnick.LinearAnimation;
 import java.util.Random;
 
 /**
- * Created by qfsong on 15/9/10.
+ * Created by SongNick on 15/9/10.
  */
 public class SplashProgress extends View {
 

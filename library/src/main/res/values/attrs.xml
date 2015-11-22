@@ -22,7 +22,7 @@
 
     <declare-styleable name="ScaleViewPager">
         <attr name="marginLeftRight" format="dimension"></attr>
-        <attr name="marginTopBottom" format="dimension"></attr>
+        <attr name="gutterSize" format="dimension"></attr>
     </declare-styleable>
 
     <declare-styleable name="RefreshProgress">

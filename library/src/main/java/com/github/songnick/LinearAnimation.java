@@ -4,7 +4,7 @@ import android.view.animation.Animation;
 import android.view.animation.Transformation;
 
 /**
- * Created by qfsong on 15/9/7.
+ * Created by SongNick on 15/9/7.
  */
 public class LinearAnimation extends Animation{
 

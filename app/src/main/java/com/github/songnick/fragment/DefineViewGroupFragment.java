@@ -9,6 +9,8 @@ import android.view.View;
 import android.view.ViewGroup;
 
 import com.github.songnick.R;
+import com.github.songnick.utils.LogUtils;
+import com.github.songnick.viewgroup.SlideViewPager;
 
 /**
  * A simple {@link Fragment} subclass.
@@ -29,6 +31,8 @@ public class DefineViewGroupFragment extends Fragment {
     private String mParam2;
 
     private OnFragmentInteractionListener mListener;
+
+    private SlideViewPager mViewPager = null;
 
     /**
      * Use this factory method to create a new instance of
@@ -72,6 +76,28 @@ public class DefineViewGroupFragment extends Fragment {
                              Bundle savedInstanceState) {
         // Inflate the layout for this fragment
         return inflater.inflate(R.layout.test_layout, container, false);
+    }
+
+    @Override
+    public void onViewCreated(View view, Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
+        mViewPager = (SlideViewPager)view.findViewById(R.id.view_pager);
+        mViewPager.setOnPageChangListener(new SlideViewPager.OnPagerChangeListener() {
+            @Override
+            public void onPageSelected(int position) {
+                LogUtils.LogD(" ", " view pager on page change listener position == " + position);
+            }
+
+            @Override
+            public void onPageScrolled(int position, float positionOffset, int positionOffsetPixel) {
+
+            }
+
+            @Override
+            public void onPageScrollStateChanged(int state) {
+                LogUtils.LogD(" ", " view pager on page change listener state == " + state);
+            }
+        });
     }
 
     // TODO: Rename method, update argument and hook method into UI event

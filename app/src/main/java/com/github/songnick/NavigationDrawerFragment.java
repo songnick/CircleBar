@@ -9,7 +9,7 @@ import android.view.View;
 import android.view.ViewGroup;
 
 /**
- * Created by qfsong on 15/10/18.
+ * Created by SongNick on 15/10/18.
  */
 public class NavigationDrawerFragment extends Fragment {
 

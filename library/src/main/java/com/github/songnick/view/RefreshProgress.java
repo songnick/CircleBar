@@ -21,7 +21,7 @@ import com.github.songnick.LinearAnimation;
 import com.nick.library.R;
 
 /**
- * Created by qfsong on 15/9/8.
+ * Created by SongNick on 15/9/8.
  */
 public class RefreshProgress extends View{
 

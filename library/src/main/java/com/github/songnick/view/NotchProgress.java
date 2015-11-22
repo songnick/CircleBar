@@ -9,7 +9,7 @@ import android.util.AttributeSet;
 import android.view.View;
 
 /**
- * Created by qfsong on 15/9/10.
+ * Created by SongNick on 15/9/10.
  */
 public class NotchProgress extends View {
     public NotchProgress(Context context) {

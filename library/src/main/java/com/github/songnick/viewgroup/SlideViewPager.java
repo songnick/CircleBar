@@ -3,6 +3,7 @@ package com.github.songnick.viewgroup;
 import android.content.Context;
 import android.content.res.TypedArray;
 import android.support.v4.view.MotionEventCompat;
+import android.support.v4.view.VelocityTrackerCompat;
 import android.support.v4.view.ViewCompat;
 import android.support.v4.widget.ScrollerCompat;
 import android.util.AttributeSet;
@@ -17,28 +18,30 @@ import com.github.songnick.utils.LogUtils;
 import com.nick.library.R;
 
 /**
- * Created by qfsong on 15/10/26.
+ * Created by SongNick on 15/10/26.
  */
 public class SlideViewPager extends ViewGroup {
 
     private static final int MARGIN_LEFT_RIGHT = 150;
     private static final int MARGIN_TOP_BOTTOM = 400;
-    private static final float SCALE_RATIO = 0.8f;
+    private static float SCALE_RATIO = 0.8f;
+
+    private static final int MAX_SETTLE_DURATION = 600; // ms
 
     /**
      * view slide direction left to right
-     * */
+     */
     private static int LEFT_TO_RIGHT = 0x011;
 
     /***
      * view slide direction right to left
-     * */
+     */
 
     private static int RIGHT_TO_LEFT = 0x022;
 
     /**
      * view slide direction invalid
-     * */
+     */
     private static int INVALID_DIRECTION = 0x033;
 
     /**
@@ -47,23 +50,22 @@ public class SlideViewPager extends ViewGroup {
     public static final int INVALID_POINTER = -1;
 
     /**
-     * A view is not currently being dragged or animating as a result of a fling/snap.
+     * Indicates that the pager is in an idle, settled state. The current page
+     * is fully in view and no animation is in progress.
      */
-    public static final int STATE_IDLE = 0;
+    public static final int SCROLL_STATE_IDLE = 0;
 
     /**
-     * A view is currently being dragged. The position is currently changing as a result
-     * of user input or simulated user input.
+     * Indicates that the pager is currently being dragged by the user.
      */
-    public static final int STATE_DRAGGING = 1;
+    public static final int SCROLL_STATE_DRAGGING = 1;
 
     /**
-     * A view is currently settling into place as a result of a fling or
-     * predefined non-interactive motion.
+     * Indicates that the pager is in the process of settling to a final position.
      */
-    public static final int STATE_SETTLING = 2;
+    public static final int SCROLL_STATE_SETTLING = 2;
 
-    public static int  SNAP_VELOCITY = 600 ;
+    public static int SNAP_VELOCITY = 600;
 
     private static final String TAG = SlideViewPager.class.getSimpleName();
     private float mDownX = 0.0f;
@@ -71,28 +73,68 @@ public class SlideViewPager extends ViewGroup {
 
     // Last known position/pointer tracking
     private int mActivePointerId = INVALID_POINTER;
-    private float[] mInitialMotionX;
-    private float[] mInitialMotionY;
-    private float[] mLastMotionX;
-    private float[] mLastMotionY;
-    private int[] mInitialEdgesTouched;
-    private int[] mEdgeDragsInProgress;
-    private int[] mEdgeDragsLocked;
-    private int mPointersDown;
 
+    private static final int MIN_FLING_VELOCITY = 400; // dips
+    private static final int MIN_DISTANCE_FOR_FLING = 25; // dips
+    /**
+     * determines speed during scroll
+     */
     private VelocityTracker mVelocityTracker;
-    private float mMaxVelocity;
-    private float mMinVelocity;
+    private int mMinimumVelocity;
+    private int mMaximumVelocity;
+    private int mFlingDistance;
+    private int mCloseEnough;
     private int mCurrentPosition = 0;
     private int mCurrentDir = INVALID_DIRECTION;
 
     private ScrollerCompat mScroller;
 
     private float mMarginLeftRight = 0.0f;
-    private float mMarginTopBottom = 0.0f;
-    private int mTouchEge = 0;
+    private float mGutterSize = 0.0f;
+    private int mTouchSlop = 0;
 
     private int mSwitchSize = 0;
+    private int mScrollState = SCROLL_STATE_IDLE;
+
+    private boolean mIsBeingDragged = false;
+    private boolean mIsUnableToDrag = false;
+
+    private OnPagerChangeListener mOnPagerChangeListener = null;
+
+    private final Runnable mEndScrollRunnable = new Runnable() {
+        public void run() {
+            setScrollState(SCROLL_STATE_IDLE);
+        }
+    };
+
+
+    public interface OnPagerChangeListener{
+
+        /**
+         * this method will be invoked, when new page is selected
+         * @param position the position of new page selected
+         * */
+        void onPageSelected(int position);
+
+        /**
+         * when the page is scrolling,
+         * @param position
+         * @param positionOffset
+         * @param positionOffsetPixel
+         * */
+        void onPageScrolled(int position, float positionOffset, int positionOffsetPixel);
+
+        /**
+         * scroll state of current page
+         *
+         * @param state scroll state
+         * @see SlideViewPager#SCROLL_STATE_DRAGGING
+         * @see SlideViewPager#SCROLL_STATE_IDLE
+         * @see SlideViewPager#SCROLL_STATE_SETTLING
+         *
+         * */
+        void onPageScrollStateChanged(int state);
+    }
 
     public SlideViewPager(Context context) {
 
@@ -107,15 +149,26 @@ public class SlideViewPager extends ViewGroup {
         super(context, attrs, defStyleAttr);
         TypedArray a = context.obtainStyledAttributes(attrs, R.styleable.ScaleViewPager, 0, 0);
         mMarginLeftRight = a.getDimension(R.styleable.ScaleViewPager_marginLeftRight, 0);
-        mMarginTopBottom = a.getDimension(R.styleable.ScaleViewPager_marginTopBottom, 0);
+        mGutterSize = a.getDimensionPixelSize(R.styleable.ScaleViewPager_gutterSize, 0);
         a.recycle();
         init(context);
     }
 
-    private void init(Context context){
+    /**
+     * initialize some config
+     *
+     * @param context this view's context
+     */
+    private void init(Context context) {
+        setWillNotDraw(false);
         mScroller = ScrollerCompat.create(context, sInterpolator);
         ViewConfiguration viewConfiguration = ViewConfiguration.get(context);
-        mTouchEge = viewConfiguration.getScaledTouchSlop();
+        mTouchSlop = viewConfiguration.getScaledTouchSlop();
+        LogUtils.LogD(TAG, " touch slop == " + mTouchSlop);
+        final float density = context.getResources().getDisplayMetrics().density;
+        mMinimumVelocity = (int) (MIN_FLING_VELOCITY * density);
+        mMaximumVelocity = viewConfiguration.getScaledMaximumFlingVelocity();
+        mFlingDistance = (int) (MIN_DISTANCE_FOR_FLING * density);
     }
 
     /**
@@ -124,13 +177,21 @@ public class SlideViewPager extends ViewGroup {
     private static final Interpolator sInterpolator = new Interpolator() {
         public float getInterpolation(float t) {
             t -= 1.0f;
-            return t * t * t  + 1.0f;
+            return t * t * t * t * t + 1.0f;
         }
     };
 
     @Override
     public boolean onInterceptTouchEvent(MotionEvent ev) {
+
         return super.onInterceptTouchEvent(ev);
+    }
+
+    private void setScrollState(int state) {
+        mScrollState = state;
+        if (mOnPagerChangeListener != null){
+            mOnPagerChangeListener.onPageScrollStateChanged(state);
+        }
     }
 
 
@@ -138,8 +199,6 @@ public class SlideViewPager extends ViewGroup {
      * The result of a call to this method is equivalent to
      */
     public void cancel() {
-        mActivePointerId = INVALID_POINTER;
-//        clearMotionHistory();
 
         if (mVelocityTracker != null) {
             mVelocityTracker.recycle();
@@ -149,61 +208,60 @@ public class SlideViewPager extends ViewGroup {
 
     @Override
     public boolean onTouchEvent(MotionEvent event) {
-
+        LogUtils.LogD(TAG, " onInterceptTouchEvent hit touch event");
         final int actionIndex = MotionEventCompat.getActionIndex(event);
         mActivePointerId = MotionEventCompat.getPointerId(event, 0);
 
-        if (mVelocityTracker == null){
+        if (mVelocityTracker == null) {
             mVelocityTracker = VelocityTracker.obtain();
         }
         mVelocityTracker.addMovement(event);
-        switch (event.getAction() & MotionEvent.ACTION_MASK){
+        switch (event.getAction() & MotionEvent.ACTION_MASK) {
             case MotionEvent.ACTION_DOWN:
                 mDownX = event.getRawX();
-                if (mScroller != null && !mScroller.isFinished()){
+                if (mScroller != null && !mScroller.isFinished()) {
                     mScroller.abortAnimation();
                 }
                 break;
             case MotionEvent.ACTION_MOVE:
+
                 //calculate moving distance
                 float distance = -(event.getRawX() - mDownX);
                 mDownX = event.getRawX();
                 LogUtils.LogD(TAG, " current distance == " + distance);
-                scrollBy((int) distance, 0);
-                if (distance < 0){
-                    slidScale(mCurrentPosition, LEFT_TO_RIGHT);
-                }else {
-                    LogUtils.LogD(TAG, " current direction is right to left and current child position =  " + mCurrentPosition);
-                    slidScale(mCurrentPosition, RIGHT_TO_LEFT);
-                }
-
+                performDrag((int)distance);
                 break;
             case MotionEvent.ACTION_UP:
-                releaseViewForPointerUp();
+                releaseViewForTouchUp();
                 cancel();
                 break;
         }
         return true;
     }
 
-    /**
-     * Clamp the magnitude of value for absMin and absMax.
-     * If the value is below the minimum, it will be clamped to zero.
-     * If the value is above the maximum, it will be clamped to the maximum.
-     *
-     * @param value Value to clamp
-     * @param absMin Absolute value of the minimum significant value to return
-     * @param absMax Absolute value of the maximum value to return
-     * @return The clamped value with the same sign as <code>value</code>
-     */
-    private float clampMag(float value, float absMin, float absMax) {
-        final float absValue = Math.abs(value);
-        if (absValue < absMin) return 0;
-        if (absValue > absMax) return value > 0 ? absMax : -absMax;
-        return value;
+    /***
+     * drag the this view smooth scale
+     * @param distance should be drag
+     * */
+    private void performDrag(int distance) {
+        if (mOnPagerChangeListener != null){
+            mOnPagerChangeListener.onPageScrollStateChanged(SCROLL_STATE_DRAGGING);
+        }
+        LogUtils.LogD(TAG, " perform drag distance == " + distance);
+        scrollBy(distance, 0);
+        if (distance < 0) {
+            dragScaleShrinkView(mCurrentPosition, LEFT_TO_RIGHT);
+        } else {
+            LogUtils.LogD(TAG, " current direction is right to left and current child position =  " + mCurrentPosition);
+            dragScaleShrinkView(mCurrentPosition, RIGHT_TO_LEFT);
+        }
     }
 
-    private void releaseViewForPointerUp() {
+    /**
+     * user move the view and release view
+     * but there is also some question for tow pointer event
+     */
+    private void releaseViewForTouchUp() {
 //        mVelocityTracker.computeCurrentVelocity(1000, mMaxVelocity);
 //        final float xvel = clampMag(
 //                VelocityTrackerCompat.getXVelocity(mVelocityTracker, mActivePointerId),
@@ -211,69 +269,144 @@ public class SlideViewPager extends ViewGroup {
 //        if (xvel != 0){
 //            smoothScrollToDes();
 //        }
-        mVelocityTracker.computeCurrentVelocity(1000);
+        final VelocityTracker velocityTracker = mVelocityTracker;
+        velocityTracker.computeCurrentVelocity(1000, mMaximumVelocity);
+        int initialVelocity = (int) VelocityTrackerCompat.getXVelocity(
+                velocityTracker, mActivePointerId);
         float xVel = mVelocityTracker.getXVelocity();
-        if (xVel > SNAP_VELOCITY && mCurrentPosition > 0){
-            smoothScrollToView(mCurrentPosition - 1);
-        }else if (xVel < -SNAP_VELOCITY && mCurrentPosition < getChildCount() - 1){
-            smoothScrollToView(mCurrentPosition + 1);
-        }else {
+        if (xVel > SNAP_VELOCITY && mCurrentPosition > 0) {
+            smoothScrollToItemView(mCurrentPosition - 1, true);
+        } else if (xVel < -SNAP_VELOCITY && mCurrentPosition < getChildCount() - 1) {
+            smoothScrollToItemView(mCurrentPosition + 1, true);
+        } else {
             smoothScrollToDes();
         }
+        setScrollState(SCROLL_STATE_SETTLING);
     }
 
-    private boolean isRelease = false;
+    public void setCurrentItem(int position, boolean smooth) {
+
+        if (position >= 0 && position <= getChildCount() - 1){
+            smoothScrollToItemView(position, true);
+        }
+
+    }
+
+    private int determineTargetPosition(int currentPosition, int velocity, int deltaX) {
+
+        int targetPosition = 0;
+
+        if (Math.abs(velocity) > mMinimumVelocity) {
+            targetPosition = velocity > 0 ? currentPosition : currentPosition + 1;
+        }
+
+        return targetPosition;
+    }
+
+    // We want the duration of the page snap animation to be influenced by the distance that
+    // the screen has to travel, however, we don't want this duration to be effected in a
+    // purely linear fashion. Instead, we use this method to moderate the effect that the distance
+    // of travel has on the overall snap duration.
+    float distanceInfluenceForSnapDuration(float f) {
+        f -= 0.5f; // center the values about 0.
+        f *= 0.3f * Math.PI / 2.0f;
+        return (float) Math.sin(f);
+    }
+
+
     /**
      * when user touch up, invoke this method,
      * and scroll to confirmed view smoothly
-     * */
-    private void smoothScrollToDes(){
-        isRelease  = true;
+     */
+    private void smoothScrollToDes() {
         int scrollX = getScrollX();
         //confirm the position to scroll
         int position = (scrollX + mSwitchSize / 2) / mSwitchSize;
-        LogUtils.LogD(TAG, " smooth scroll to des position == before ="  + mCurrentPosition
+        LogUtils.LogD(TAG, " smooth scroll to des position == before =" + mCurrentPosition
                 + " scroll X = " + scrollX + " switch size == " + mSwitchSize + " position == " + position);
-        mCurrentPosition = position;
-
-        int dx = position * (getMeasuredWidth() - (int)mMarginLeftRight * 2) - scrollX;
-        LogUtils.LogD(TAG, " smooth scroll to des position == " + position + " dx = " + dx + " scroll x == " + scrollX);
-        mScroller.startScroll(getScrollX(), 0, dx, 0, Math.abs(dx));
-        invalidate();
+        smoothScrollToItemView(position, mCurrentPosition == position);
+//        if (mCurrentPosition != position){
+//            if (mOnPagerChangeListener != null){
+//                mOnPagerChangeListener.onPageSelected(position);
+//            }
+//        }
+//        mCurrentPosition = position;
+//
+//        int dx = position * (getMeasuredWidth() - (int) mMarginLeftRight * 2) - scrollX;
+//        LogUtils.LogD(TAG, " smooth scroll to des position == " + position + " dx = " + dx + " scroll x == " + scrollX);
+//        mScroller.startScroll(getScrollX(), 0, dx, 0, Math.min(Math.abs(dx) * 2, MAX_SETTLE_DURATION));
+//        invalidate();
     }
 
-    private void smoothScrollToView(int position){
+    /**
+     * scroll to confirmed position of child
+     *
+     * @param position the view position in this {@link #ViewGroup}
+     */
+    private void smoothScrollToItemView(int position, boolean pageSelected) {
         mCurrentPosition = position;
-        if (mCurrentPosition > getChildCount()-1){
+        if (mCurrentPosition > getChildCount() - 1) {
             mCurrentPosition = getChildCount() - 1;
         }
-        int dx = position * (getMeasuredWidth() - (int)mMarginLeftRight * 2) - getScrollX();
-        mScroller.startScroll(getScrollX(), 0, dx, 0,Math.abs(dx) * 2);
+        if (mOnPagerChangeListener != null && pageSelected){
+            mOnPagerChangeListener.onPageSelected(position);
+        }
+        int dx = position * (getMeasuredWidth() - (int) mMarginLeftRight * 2) - getScrollX();
+        mScroller.startScroll(getScrollX(), 0, dx, 0, Math.min(Math.abs(dx) * 2, MAX_SETTLE_DURATION));
         invalidate();
     }
 
     @Override
     public void computeScroll() {
-//        super.computeScroll();
-        if (mScroller.computeScrollOffset()) {
-//            if (isRelease){
-//                restoreView(mCurrentPosition, mCurrentDir);
-//            }else {
-                int position = mCurrentPosition;
-                if (mCurrentDir == RIGHT_TO_LEFT){
-                    LogUtils.LogD(TAG, " current direction == right to left" );
-                    position = mCurrentPosition - 1;
-                }else if (mCurrentDir == LEFT_TO_RIGHT){
-                    LogUtils.LogD(TAG, " current direction == left to right " );
-                    position = mCurrentPosition + 1;
-                }
-                releaseScaleChild(position, mCurrentDir);
+        if (!mScroller.isFinished() && mScroller.computeScrollOffset()) {
+            int dx = mCurrentPosition * mSwitchSize - mScroller.getCurrX();
+            LogUtils.LogD(TAG, " compute scroll dx == " + dx + " position == " + mCurrentPosition);
+//                int position = mCurrentPosition;
+//                if (mCurrentDir == RIGHT_TO_LEFT){
+//                    LogUtils.LogD(TAG, " current direction == right to left" );
+//                    position = mCurrentPosition - 1;
+//                }else if (mCurrentDir == LEFT_TO_RIGHT){
+//                    LogUtils.LogD(TAG, " current direction == left to right " );
+//                    position = mCurrentPosition + 1;
+//                }
+            dragScaleShrinkView(mCurrentPosition, mCurrentDir);
 //            }
             scrollTo(mScroller.getCurrX(), 0);
         }
+        completeScroll(true);
+
     }
 
-    private void slidScale(int position, int direction){
+    /**
+     * whether the scroll animation is end
+     * @param postEvents post run the runnable event
+     * */
+    private void completeScroll(boolean postEvents){
+
+        boolean needPopulate = mScrollState == SCROLL_STATE_SETTLING;
+
+        if (needPopulate){
+            if (postEvents) {
+                ViewCompat.postOnAnimation(this, mEndScrollRunnable);
+            } else {
+                mEndScrollRunnable.run();
+            }
+
+        }
+
+    }
+
+    /**
+     * when the user drag the view, current view should be scaled or shrink and next view or previous view size should be changed
+     *
+     * @param position the position of dragging view
+     *
+     * @param direction the direction of drag
+     *                  @see SlideViewPager#RIGHT_TO_LEFT
+     *                  @see SlideViewPager#LEFT_TO_RIGHT
+     *                  @see SlideViewPager#INVALID_DIRECTION
+     * */
+    private void dragScaleShrinkView(int position, int direction) {
 
         int distance = getScrollX() - position * mSwitchSize;
         mCurrentDir = direction;
@@ -284,49 +417,51 @@ public class SlideViewPager extends ViewGroup {
         //if distance is bigger than zero,
         //current drag action is between current page and next page
         //otherwise is between front page and current page
-        if (distance > 0){
+        if (distance > 0) {
             int moveSize = getScrollX() - position * mSwitchSize;
-            float ratio = (float)moveSize / mSwitchSize;//this value is from 0 to 1;
-            if (direction == LEFT_TO_RIGHT){//value may be from X to 0
-                if (position >= 0){
+            float ratio = (float) moveSize / mSwitchSize;//this value is from 0 to 1;
+            if (direction == LEFT_TO_RIGHT) {//value may be from X to 0
+                if (position >= 0) {
+                    //current view should be scaled
                     scaleView = getChildAt(position);
+                    //next view should be shrink
                     shrinkView = getChildAt(position + 1);
-                    float currentScale = (float)scaleView.getTag();
-                    float currentShrink = (float)scaleView.getTag();
-                    shrinkRatio = SCALE_RATIO + (1.0f - SCALE_RATIO ) * ratio;
-                    scaleRatio = 1.0f - (1.0f - SCALE_RATIO ) * ratio;
-                    LogUtils.LogD(TAG, " current scale ratio = " + scaleRatio +  " shrink ratio = " + shrinkRatio + " ratio = " + ratio);
+                    shrinkRatio = SCALE_RATIO + (1.0f - SCALE_RATIO) * ratio;
+                    scaleRatio = 1.0f - (1.0f - SCALE_RATIO) * ratio;
+                    LogUtils.LogD(TAG, " current scale ratio = " + scaleRatio + " shrink ratio = " + shrinkRatio + " ratio = " + ratio);
                 }
-            }else if (direction == RIGHT_TO_LEFT){
-                if (position < getChildCount() - 1){
+            } else if (direction == RIGHT_TO_LEFT) {
+                if (position < getChildCount() - 1) {
+                    //
                     scaleView = getChildAt(position + 1);
                     shrinkView = getChildAt(position);
-                    scaleRatio = SCALE_RATIO + (1.0f - SCALE_RATIO ) * ratio;;
-                    shrinkRatio = 1.0f - (1.0f - SCALE_RATIO ) * ratio;
+                    scaleRatio = SCALE_RATIO + (1.0f - SCALE_RATIO) * ratio;
+                    ;
+                    shrinkRatio = 1.0f - (1.0f - SCALE_RATIO) * ratio;
                 }
             }
-        }else if (distance < 0){
-            float moveSize = position*mSwitchSize - getScrollX();
+        } else if (distance < 0) {
+            float moveSize = position * mSwitchSize - getScrollX();
             float ratio = moveSize / mSwitchSize;
 
-            if (direction == LEFT_TO_RIGHT){
+            if (direction == LEFT_TO_RIGHT) {
                 scaleView = getChildAt(position - 1);
                 shrinkView = getChildAt(position);
-                scaleRatio = SCALE_RATIO + (1.0f - SCALE_RATIO ) * ratio;
-                shrinkRatio = 1.0f - (1.0f - SCALE_RATIO ) * ratio;
-            }else if (direction == RIGHT_TO_LEFT){
+                scaleRatio = SCALE_RATIO + (1.0f - SCALE_RATIO) * ratio;
+                shrinkRatio = 1.0f - (1.0f - SCALE_RATIO) * ratio;
+            } else if (direction == RIGHT_TO_LEFT) {
                 scaleView = getChildAt(position);
                 shrinkView = getChildAt(position - 1);
-                shrinkRatio = SCALE_RATIO + (1.0f - SCALE_RATIO ) * ratio;
-                scaleRatio = 1.0f - (1.0f - SCALE_RATIO ) * ratio;
+                shrinkRatio = SCALE_RATIO + (1.0f - SCALE_RATIO) * ratio;
+                scaleRatio = 1.0f - (1.0f - SCALE_RATIO) * ratio;
             }
         }
-        if (scaleView != null){
+        if (scaleView != null) {
             ViewCompat.setScaleX(scaleView, scaleRatio);
             ViewCompat.setScaleY(scaleView, scaleRatio);
             scaleView.invalidate();
         }
-        if (shrinkView != null){
+        if (shrinkView != null) {
             ViewCompat.setScaleX(shrinkView, shrinkRatio);
             ViewCompat.setScaleY(shrinkView, shrinkRatio);
             shrinkView.invalidate();
@@ -334,127 +469,33 @@ public class SlideViewPager extends ViewGroup {
     }
 
     /**
-     * shrink the size of current sliding the child, and scale the next child which
-     * will slide to middle position
-     * @param position current sliding child's position
-     * @param direction the slide direction{@link #RIGHT_TO_LEFT } {@link #LEFT_TO_RIGHT}
+     * set current page change listener
+     * @param onPageChangListener
+     * @see com.github.songnick.viewgroup.SlideViewPager.OnPagerChangeListener
      * */
-    private void releaseScaleChild(int position, int direction){
+    public void setOnPageChangListener(OnPagerChangeListener onPageChangListener){
 
-        mCurrentDir = direction;
-        int intervalSize = position;
-        int intervalWidth = position * mSwitchSize;
-        LogUtils.LogD(TAG, " scale child scroll x = " + getScrollX()
-                + " current position = " + position + " intervalSize = " + intervalWidth);
-
-        if (direction == LEFT_TO_RIGHT ){
-            intervalSize = position - 1;
-        }
-        float r = (float)(getScrollX()- mSwitchSize *intervalSize) / mSwitchSize;
-        LogUtils.LogD(TAG, " current position == " + position + "current ratio == " + r);
-        float scaleRatio = SCALE_RATIO + (1.0f - SCALE_RATIO) * r;
-        float shrinkRatio = 1.0f - (1.0f - SCALE_RATIO)*r;
-        View scaleView = null;
-        View shrinkView = null;
-        float scale = 0.0f;
-        float shrink = 0.0f;
-        if (direction == LEFT_TO_RIGHT){
-            if (position > 0){
-                scaleView = getChildAt(position - 1);
-                shrinkView = getChildAt(position);
-                shrink = SCALE_RATIO + (1.0f - SCALE_RATIO) * r;
-                scale = 1.0f - (1.0f - SCALE_RATIO)*r;
-            }else {
-                scaleView = getChildAt(position);
-                shrinkView = getChildAt(position + 1);
-                scale = SCALE_RATIO + (1.0f - SCALE_RATIO) * r;
-                shrink = 1.0f - (1.0f - SCALE_RATIO)*r;
-            }
-        }else if (direction == RIGHT_TO_LEFT){
-            if (getScrollX() - mSwitchSize * position > 0){
-                if (position < getChildCount() - 1){
-                    scaleView = getChildAt(position + 1);
-                    shrinkView = getChildAt(position);
-                    scale = SCALE_RATIO + (1.0f - SCALE_RATIO) * r;
-                    shrink = 1.0f - (1.0f - SCALE_RATIO)*r;
-                }
-            }else {
-                scaleView = getChildAt(position);
-                shrinkView = getChildAt(position - 1);
-                scale = SCALE_RATIO + (1.0f - SCALE_RATIO) * r;
-                shrink = 1.0f - (1.0f - SCALE_RATIO)*r;
-            }
-
-        }else {
-            throw new IllegalStateException("this is illegal state");
-        }
-        if (scaleView != null){
-            ViewCompat.setScaleX(scaleView, scale);
-            ViewCompat.setScaleY(scaleView, scale);
-            scaleView.invalidate();
-        }
-        if (shrinkView != null){
-            ViewCompat.setScaleX(shrinkView, shrink);
-            ViewCompat.setScaleY(shrinkView, shrink);
-            shrinkView.invalidate();
-        }
-    }
-
-    private void restoreView(int position, int direction){
-
-        float r = (float)(getScrollX()- mSwitchSize * position) / mSwitchSize;
-        View scaleView = null;
-        View shrinkView = null;
-        float scale = 0.0f;
-        float shrink = 0.0f;
-        if (direction == RIGHT_TO_LEFT ){
-            if (position < getChildCount() - 1){
-                scaleView = getChildAt(position);
-                shrinkView = getChildAt(position + 1);
-                scale = 1.0f - (1.0f - SCALE_RATIO) * r;
-                shrink = SCALE_RATIO + (1.0f - SCALE_RATIO) * r;
-            }
-        }else if (direction == LEFT_TO_RIGHT){
-            if (position > 0){
-                scaleView = getChildAt(position);
-                shrinkView = getChildAt(position - 1);
-                scale = SCALE_RATIO + (1.0f - SCALE_RATIO) * r;
-                shrink = 1.0f - (1.0f - SCALE_RATIO) * r;
-            }
-        }else {
-            throw  new IllegalStateException(" unexception direction is set ");
-        }
-        LogUtils.LogD(TAG, " release position " + position + " scale ratio = " + scale + " shrink ratio = " + shrink + " direction == " + direction);
-        if (scaleView != null){
-            ViewCompat.setScaleX(scaleView, scale);
-            ViewCompat.setScaleY(scaleView, scale);
-            scaleView.invalidate();
-        }
-        if (shrinkView != null){
-            ViewCompat.setScaleX(shrinkView, shrink);
-            ViewCompat.setScaleY(shrinkView, shrink);
-            shrinkView.invalidate();
-        }
+        mOnPagerChangeListener = onPageChangListener;
 
     }
+
 
     @Override
     protected void onLayout(boolean changed, int l, int t, int r, int b) {
         int childCount = getChildCount();
-        int originLeft = (int)mMarginLeftRight;
-        int originTop = (int)mMarginTopBottom;
+        int originLeft = (int) mMarginLeftRight;
 
         for (int i = 0; i < childCount; i++) {
             View child = getChildAt(i);
             int left = originLeft + child.getMeasuredWidth() * i;
             int right = originLeft + child.getMeasuredWidth() * (i + 1);
-            int bottom = originTop + child.getMeasuredHeight();
-            child.layout(left, originTop, right, bottom);
-            if (i != 0){
+            int bottom = child.getMeasuredHeight();
+            child.layout(left, 0, right, bottom);
+            if (i != 0) {
                 child.setScaleX(SCALE_RATIO);
                 child.setScaleY(SCALE_RATIO);
                 child.setTag(SCALE_RATIO);
-            }else {
+            } else {
                 child.setTag(1.0f);
             }
         }
@@ -474,15 +515,28 @@ public class SlideViewPager extends ViewGroup {
         int measuredHeight = getMeasuredHeight();
 
         int childCount = getChildCount();
-        int width = measuredWidth - (int)(mMarginLeftRight * 2);
-        int height = measuredHeight - (int)mMarginTopBottom * 2;
+        int width = measuredWidth - (int) (mMarginLeftRight * 2);
+        int height = measuredHeight;
         int childWidthMeasureSpec = MeasureSpec.makeMeasureSpec(width, MeasureSpec.EXACTLY);
         int childHeightMeasureSpec = MeasureSpec.makeMeasureSpec(height, MeasureSpec.EXACTLY);
         for (int i = 0; i < childCount; i++) {
             getChildAt(i).measure(childWidthMeasureSpec, childHeightMeasureSpec);
         }
-
-        mSwitchSize = measuredWidth - (int)mMarginLeftRight * 2;
+        mSwitchSize = width;
+        confirmScaleRatio(width, mGutterSize);
     }
 
+    private void confirmScaleRatio(int width, float gutterSize) {
+        SCALE_RATIO = (width - gutterSize * 2) / width;
+        LogUtils.LogD(TAG, " confirm scale ratio == " + gutterSize + " ration ==  " + SCALE_RATIO + " margin lef t == " + mMarginLeftRight);
+
+    }
+
+    @Override
+    protected void onSizeChanged(int w, int h, int oldw, int oldh) {
+
+        LogUtils.LogD(TAG, " onSize changed com ");
+
+        super.onSizeChanged(w, h, oldw, oldh);
+    }
 }

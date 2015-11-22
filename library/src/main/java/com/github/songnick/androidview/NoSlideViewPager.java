@@ -6,7 +6,7 @@ import android.util.AttributeSet;
 import android.view.MotionEvent;
 
 /**
- * Created by sfhong on 2015/6/8.
+ * Created by SongNick on 2015/6/8.
  */
 public class NoSlideViewPager extends ViewPager {
     public NoSlideViewPager(Context context) {

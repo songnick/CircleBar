@@ -366,6 +366,10 @@ public class SlidProgressbar extends RelativeLayout {
         updateViewLayout(mThumb, mThumbLp);
     }
 
+    /**
+     * retrieve the total width of progress bar
+     * @return width
+     * */
     private int getProgressWidth(){
         int width = 0;
         if (mOrientation == HORIZONTAL){
@@ -451,6 +455,10 @@ public class SlidProgressbar extends RelativeLayout {
         mMaxProgress = maxProgress;
     }
 
+    /***
+     * get the max value of progress bar
+     * @return
+     * */
     public int getMaxProgress(){
 
         return mMaxProgress;

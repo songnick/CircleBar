@@ -31,6 +31,13 @@ import android.os.SystemClock;
 import android.support.annotation.DrawableRes;
 import android.support.v4.os.ParcelableCompat;
 import android.support.v4.os.ParcelableCompatCreatorCallbacks;
+import android.support.v4.view.AccessibilityDelegateCompat;
+import android.support.v4.view.KeyEventCompat;
+import android.support.v4.view.MotionEventCompat;
+import android.support.v4.view.PagerAdapter;
+import android.support.v4.view.VelocityTrackerCompat;
+import android.support.v4.view.ViewCompat;
+import android.support.v4.view.ViewConfigurationCompat;
 import android.support.v4.view.accessibility.AccessibilityEventCompat;
 import android.support.v4.view.accessibility.AccessibilityNodeInfoCompat;
 import android.support.v4.view.accessibility.AccessibilityRecordCompat;
@@ -50,14 +57,6 @@ import android.view.ViewParent;
 import android.view.accessibility.AccessibilityEvent;
 import android.view.animation.Interpolator;
 import android.widget.Scroller;
-import android.support.v4.view.MotionEventCompat;
-import android.support.v4.view.VelocityTrackerCompat;
-import android.support.v4.view.AccessibilityDelegateCompat;
-import android.support.v4.view.KeyEventCompat;
-import android.support.v4.view.ViewConfigurationCompat;
-import android.support.v4.view.PagerAdapter;
-import android.support.v4.view.ViewCompat;
-import android.widget.ViewAnimator;
 
 import java.lang.reflect.Method;
 import java.util.ArrayList;
@@ -98,7 +97,7 @@ import java.util.List;
 
 /**
  * this view group is copy from ASOP
- * author:qfsong
+ * author:SongNick
  *
  * */
 public class ScaleViewPager extends ViewGroup {

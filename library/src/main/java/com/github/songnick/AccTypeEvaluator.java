@@ -4,7 +4,7 @@ import android.animation.TypeEvaluator;
 import android.util.Log;
 
 /**
- * Created by qfsong on 15/9/7.
+ * Created by SongNick on 15/9/7.
  */
 public class AccTypeEvaluator implements TypeEvaluator<Float>{
 

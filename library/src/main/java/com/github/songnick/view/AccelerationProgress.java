@@ -21,7 +21,7 @@ import com.github.songnick.LinearAnimation;
 import com.nick.library.R;
 
 /**
- * Created by qfsong on 15/8/31.
+ * Created by SongNick on 15/8/31.
  * here we need know the circle progress
  * (x-a)^2 + (y-b)^2 = r^2;
  */
@@ -256,15 +256,6 @@ public class AccelerationProgress extends View implements LinearAnimation.Linear
      * <b>https://github.com/JakeWharton/NineOldAndroids</b>
      * */
     private void startAnimation(){
-//        if (mAccAnimation == null){
-//            mAccAnimation = new LinearAnimation();
-//            mAccAnimation.setDuration(1000);
-//            mAccAnimation.setInterpolator(new LinearInterpolator());
-//            mAccAnimation.setRepeatCount(Animation.INFINITE);
-//        }
-//        mAccAnimation.setAccAnimationListener(this);
-//        startAnimation(mAccAnimation);
-
         AccTypeEvaluator accCore = new AccTypeEvaluator();
         animator = ValueAnimator.ofObject(accCore, 0.0f, 360.0f);
         animator.setDuration(mDuration);

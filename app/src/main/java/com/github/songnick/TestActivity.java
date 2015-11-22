@@ -1,25 +1,17 @@
 package com.github.songnick;
 
-import android.app.Activity;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentPagerAdapter;
-import android.support.v4.view.ViewPager;
 import android.support.v7.app.AppCompatActivity;
-import android.util.Log;
-import android.view.Gravity;
-import android.view.View;
-import android.view.ViewGroup;
-import android.view.ViewTreeObserver;
-import android.widget.TextView;
 
 import com.github.songnick.viewgroup.ScaleViewPager;
 
 import java.util.ArrayList;
 
 /**
- * Created by qfsong on 15/10/25.
+ * Created by SongNick on 15/10/25.
  */
 public class TestActivity extends AppCompatActivity {
 

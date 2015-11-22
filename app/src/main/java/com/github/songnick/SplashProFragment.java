@@ -8,7 +8,7 @@ import android.view.View;
 import android.view.ViewGroup;
 
 /**
- * Created by qfsong on 15/10/28.
+ * Created by SongNick on 15/10/28.
  */
 public class SplashProFragment extends Fragment{
 
