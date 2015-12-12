@@ -9,20 +9,3 @@ By this way I can understand how to use View or ViewGroup or RLT to define a Cus
 ![alt tag](/screenshot/customview.gif)
 
 
-### AccelerationProgress
-
-This progressbar is from my phone (HuaWei P7)
-![alt tag](/screenshot/huawei_p7.gif)
-
-My implement is below.But this is simple implement
-![alt tag](/screenshot/my_implement.gif)
-
-### RefreshProgress
-
-This progressbar is from Moto X(company's test device)
-![alt tag](/screenshot/moto.gif)
-
-below it's my simple implement
-
-![alt tag](/screenshot/refresh.gif)
-
